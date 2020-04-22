@@ -11,7 +11,7 @@ app = Flask(__name__, static_folder='build/', static_url_path='/')
 app.debug = 'DEBUG' in os.environ
 
 sockets = Sockets(app)
-api = LiteratureAPI()
+api = LiteratureAPI(app.logger)
 
 
 @app.route('/')
