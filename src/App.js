@@ -1,11 +1,36 @@
 import React, { Component } from 'react';
-import logo from './logo.svg';
-import './App.css';
+import VerticalCards from './components/VerticalCards';
 
 class App extends Component {
+  constructor(props) {
+    super(props)
+    this.state = {
+      uuid: '',
+      hand: []
+    }
+  }
+
   handleMessage(message) {
     let data = JSON.parse(message.data);
     console.log('Received: ' + JSON.stringify(data));
+    switch (data.action) {
+      case 'register':
+        if (data.payload.success) {
+          this.setState({
+            uuid: data.payload.uuid
+          })
+        } else {
+          console.log('All seats are full in the room');
+        }
+        break;
+      case 'hand':
+        this.setState({
+          hand: data.payload
+        })
+        break;
+      default:
+        console.log('Unhandled action: ' + data.action);
+    }
   }
 
   sendMessage(message) {
@@ -20,16 +45,16 @@ class App extends Component {
       ws_scheme = "ws://"
     };
     let receiver = new window.ReconnectingWebSocket(
-      ws_scheme + location.host + "/receive"
+      ws_scheme + window.location.host + "/receive"
     );
-    receiver.onmessage = this.handleMessage;
-    receiver.onclose = function() {
+    receiver.onmessage = this.handleMessage.bind(this);
+    receiver.onclose = function () {
       this.receiver = new WebSocket(receiver.url);
     };
     let sender = new window.ReconnectingWebSocket(
-      ws_scheme + location.host + "/submit"
+      ws_scheme + window.location.host + "/submit"
     );
-    sender.onclose = function() {
+    sender.onclose = function () {
       this.sender = new WebSocket(sender.url);
     };
     this.setState({
@@ -39,15 +64,7 @@ class App extends Component {
 
   render() {
     return (
-      <div className="App">
-        <div className="App-header">
-          <img src={logo} className="App-logo" alt="logo" />
-          <h2>Welcome to React</h2>
-        </div>
-        <p className="App-intro">
-          To get started, edit <code>src/App.js</code> and save to reload.
-        </p>
-      </div>
+      <VerticalCards cards={this.state.hand} />
     );
   }
 }
