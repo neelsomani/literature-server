@@ -60,9 +60,9 @@ import random
 from literature.actor import Actor
 from literature.card import (
     Card,
+    deserialize,
     get_hands,
     HalfSuit,
-    Rank,
     Suit
 )
 from literature.constants import Half, SETS
@@ -322,7 +322,7 @@ class Literature:
         while len(move_components) > 0:
             actor = Actor(int(move_components.pop(0)))
             card_str = move_components.pop(0)
-            card = _str_to_card(rank_str=card_str[:-1], suit_str=card_str[-1])
+            card = deserialize(rank=card_str[:-1], suit=card_str[-1])
             claim[card] = actor
         self.commit_claim(self.turn, claim)
 
@@ -330,8 +330,8 @@ class Literature:
         if len(move_components) != 2:
             raise ValueError('The format of the move is incorrect')
         player = Actor(int(move_components[0]))
-        card = _str_to_card(rank_str=move_components[1][:-1],
-                            suit_str=move_components[1][-1])
+        card = deserialize(rank=move_components[1][:-1],
+                           suit=move_components[1][-1])
         self.commit_move(self.turn.asks(player).to_give(card))
 
 
@@ -350,30 +350,6 @@ def _validate_possessions(player: Actor, possessions: Dict[Card.Name, Actor]):
     half_suits = [c.half_suit() for c in possessions]
     if not all(h == half_suits[0] for h in half_suits):
         raise ValueError('All cards must belong to the same half suit')
-
-
-def _str_to_card(rank_str: str, suit_str: str) -> Card.Name:
-    rank = _map_rank(rank_str)
-    suit_map = {
-        'C': Suit.CLUBS,
-        'D': Suit.DIAMONDS,
-        'H': Suit.HEARTS,
-        'S': Suit.SPADES
-    }
-    suit = suit_map[suit_str]
-    return Card.Name(rank, suit)
-
-
-def _map_rank(rank: str) -> Rank:
-    if rank == 'J':
-        return Rank(11)
-    elif rank == 'Q':
-        return Rank(12)
-    elif rank == 'K':
-        return Rank(13)
-    elif rank == 'A':
-        return Rank(1)
-    return Rank(int(rank))
 
 
 if __name__ == '__main__':

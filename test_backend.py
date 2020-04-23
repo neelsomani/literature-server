@@ -83,7 +83,7 @@ def test_registration(api):
     api.register(c)
     assert len(c.messages) == 1
     msg = json.loads(c.messages[0])
-    assert msg['success'] and 'uuid' in msg
+    assert msg['payload']['success'] and 'uuid' in msg['payload']
 
 
 def test_full_room(initialized_room):
@@ -91,7 +91,7 @@ def test_full_room(initialized_room):
     c = MockClient()
     api.register(c)
     msg = json.loads(c.messages[0])
-    assert not msg['success']
+    assert not msg['payload']['success']
     for i in clients:
         assert len(i.messages) == 3
         assert json.loads(i.messages[0])['action'] == REGISTER
@@ -102,11 +102,11 @@ def test_full_room(initialized_room):
         assert HAND in recv_actions and LAST_MOVE in recv_actions
 
 
-def _turn_from_messages(messages):
+def _last_move_from_messages(messages):
     for m in messages:
         msg = json.loads(m)
         if msg['action'] == LAST_MOVE:
-            return msg['payload']['turn']
+            return msg['payload']
     raise ValueError('Last move not received')
 
 
@@ -117,7 +117,7 @@ def test_switching_turn(monkeypatch, initialized_room):
         assert len(i.messages) == 3
 
     # Get the current turn
-    turn = _turn_from_messages(clients[-1].messages)
+    turn = _last_move_from_messages(clients[-1].messages)['turn']
     assert turn == 0
 
     monkeypatch.setattr(time, 'time', lambda: 45)
@@ -125,5 +125,33 @@ def test_switching_turn(monkeypatch, initialized_room):
     for i in clients:
         assert len(i.messages) == 5
 
-    current_turn = _turn_from_messages(clients[-1].messages[-2:])
+    current_turn = _last_move_from_messages(clients[-1].messages[-2:])['turn']
     assert current_turn == 1
+
+
+def test_make_move(initialized_room):
+    api, clients = initialized_room['api'], initialized_room['clients']
+    p0_key = None
+    for i in clients:
+        reg_msg = json.loads(i.messages[0])
+        if api.users[reg_msg['payload']['uuid']].player_n == 0:
+            p0_key = reg_msg['payload']['uuid']
+    if not p0_key:
+        raise ValueError('Player 0 not found')
+    assert len(clients[0].messages) == 3
+    api.handle_message({
+        'action': MOVE,
+        'payload': {
+            'key': p0_key,
+            'respondent': 1,
+            'card': MISSING_CARD.serialize()
+        }
+    })
+    assert len(clients[0].messages) == 5
+    move = _last_move_from_messages(clients[-1].messages[-2:])
+    assert move['success']
+    assert move['interrogator'] == 0
+    assert move['respondent'] == 1
+    assert move['success']
+    assert move['card'] == MISSING_CARD.serialize()
+    assert move['turn'] == 0

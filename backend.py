@@ -44,7 +44,9 @@ class LiteratureAPI:
         if self.current_players == self.n_players:
             self._send(client, {
                 'action': REGISTER,
-                'success': False
+                'payload': {
+                    'success': False
+                }
             })
             return
 
@@ -57,8 +59,10 @@ class LiteratureAPI:
                                 player_n=self.current_players - 1)
         self._send(client, {
             'action': REGISTER,
-            'success': True,
-            'uuid': u_id
+            'payload': {
+                'success': True,
+                'uuid': u_id
+            }
         })
         self.logger.info('Registered user {}'.format(u_id))
 
@@ -118,7 +122,17 @@ class LiteratureAPI:
         """
         Execute a move for a player.
         """
-        pass
+        if payload.get('key', '') not in self.users:
+            return
+        interrogator = self.users[payload['key']].player_n
+        respondent = int(payload['respondent'])
+        card_str = payload['card']
+        card = literature.deserialize(card_str[:-1], card_str[-1])
+        self.game.commit_move(
+            self.game.players[interrogator].asks(self.game.players[respondent])
+                .to_give(card)
+        )
+        self._send_updated_game_state()
 
     def _switch_team(self, _):
         """
@@ -187,7 +201,7 @@ class LiteratureAPI:
         self._send_all({
             'action': LAST_MOVE,
             'payload': self._with_player_info({
-                'current_turn': self.game.turn.unique_id,
+                'turn': self.game.turn.unique_id,
                 'interrogator': last_move.interrogator.unique_id,
                 'respondent': last_move.respondent.unique_id,
                 'card': last_move.card.serialize(),

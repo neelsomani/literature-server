@@ -1,5 +1,5 @@
 from literature.actor import Actor
-from literature.card import Card, HalfSuit, Rank, Suit
+from literature.card import Card, deserialize, HalfSuit, Rank, Suit
 from literature.constants import *
 from literature.knowledge import ConcreteKnowledge, Knowledge
 from literature.learning import (
