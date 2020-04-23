@@ -8,6 +8,6 @@ from literature.learning import (
     model_from_file,
     play_against_model
 )
-from literature.literature import get_game, Literature
+from literature.literature import get_game, Literature, Team
 from literature.move import Move, Request
 from literature.player import Player

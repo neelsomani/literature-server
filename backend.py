@@ -1,4 +1,3 @@
-from collections import namedtuple
 import json
 import time
 import uuid
@@ -9,7 +8,11 @@ import literature
 from constants import *
 
 
-User = namedtuple('User', ['socket', 'player_n'])
+class User:
+    def __init__(self, socket, player_n, connected):
+        self.socket = socket
+        self.player_n = player_n
+        self.connected = connected
 
 
 class LiteratureAPI:
@@ -56,7 +59,8 @@ class LiteratureAPI:
             u_id = uuid.uuid4().hex
         # Player numbers start at 0
         self.users[u_id] = User(socket=client,
-                                player_n=self.current_players - 1)
+                                player_n=self.current_players - 1,
+                                connected=True)
         self._send(client, {
             'action': REGISTER,
             'payload': {
@@ -80,14 +84,15 @@ class LiteratureAPI:
         Send given data to the registered client. Automatically discard invalid
         connections.
         """
+        serialized = json.dumps(data)
         try:
-            client.send(json.dumps(data))
+            client.send(serialized)
         except:
             for u_id in self.users:
                 if self.users[u_id].socket == client:
-                    del self.users[u_id]
-                    self.logger('Player {} has disconnected from game {}'
-                                .format(u_id, self.u_id))
+                    self.users[u_id].connected = False
+                    self.logger.info('Player {} is disconnected from game {}'
+                                     .format(u_id, self.u_id))
             # TODO(@neel): Replace disconnected player with bot.
 
     def _send_all(self, message):
@@ -115,8 +120,61 @@ class LiteratureAPI:
         Evaluate whether a player's claim is valid.
         Send the whether the player was correct in addition
         to the correct pairings to all players.
+
+        The included fields are:
+        - `claim_by`
+        - `half_suit`
+        - `turn`
+        - `success`
+        - `truth`
+        - `score`
+        - `move_timestamp`
+        - `n_cards`
+
+        The players should be shown the score at all times. The correct
+        set of possessions should be shown to players until the next move is
+        executed.
         """
-        pass
+        player_n = self.users[payload['key']].player_n
+        player = self.game.players[player_n]
+        claim = {}
+        for c, p in payload['possessions'].items():
+            claim[
+                literature.deserialize(c[:-1], c[-1])
+            ] = literature.Actor(int(p))
+        success = self.game.commit_claim(player, claim)
+
+        current_time = time.time()
+        self.move_timestamp = current_time
+        self.last_executed_move = current_time
+
+        _random_card = list(payload['possessions'])[0]
+        half_suit = literature.deserialize(_random_card[:-1],
+                                           _random_card[-1]).half_suit()
+        score = {
+            t.name.lower():
+                sum(self.game.claims[literature.HalfSuit(h, s)] == t
+                    for h in literature.Half for s in literature.Suit)
+            for t in literature.Team
+        }
+        self._send_all({
+            'action': CLAIM,
+            'payload': self._with_player_info({
+                'claim_by': player_n,
+                'half_suit': {
+                    'half': half_suit.half.name.lower(),
+                    'suit': half_suit.suit.name[0]
+                },
+                'turn': self.game.turn.unique_id,
+                'success': success,
+                'truth': {
+                    c.serialize(): p.unique_id
+                    for c, p in self.game.actual_possessions[half_suit].items()
+                },
+                'score': score
+            })
+        })
+        self._send_hands()
 
     def _move(self, payload):
         """
@@ -124,7 +182,7 @@ class LiteratureAPI:
         """
         if payload.get('key', '') not in self.users:
             return
-        interrogator = self.users[payload['key']].player_n
+        interrogator = int(self.users[payload['key']].player_n)
         respondent = int(payload['respondent'])
         card_str = payload['card']
         card = literature.deserialize(card_str[:-1], card_str[-1])
@@ -132,6 +190,11 @@ class LiteratureAPI:
             self.game.players[interrogator].asks(self.game.players[respondent])
                 .to_give(card)
         )
+
+        current_time = time.time()
+        self.move_timestamp = current_time
+        self.last_executed_move = current_time
+
         self._send_updated_game_state()
 
     def _switch_team(self, _):
@@ -227,11 +290,5 @@ class LiteratureAPI:
     def _send_complete(self):
         """
         Send that the game is in a finished state to all players.
-        """
-        pass
-
-    def _send_score(self):
-        """
-        Send the updated score to all players.
         """
         pass

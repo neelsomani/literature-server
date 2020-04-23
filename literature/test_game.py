@@ -49,6 +49,8 @@ def test_turn_change(game):
     c = claims_1.pop(HalfSuit(Half.MAJOR, Suit.DIAMONDS))
     game.commit_claim(Actor(1), c)
     assert game.turn == Actor(1)
+    with pytest.raises(ValueError):
+        game.commit_claim(Actor(1), c)
 
 
 def test_end_game_condition(game):

@@ -113,6 +113,9 @@ class Literature:
         self.claims = PrintableDict({
             HalfSuit(h, s): Team.NEITHER for h in Half for s in Suit
         })
+        # `self.actual_possessions` saves the correct mapping of cards for
+        # a `HalfSuit`
+        self.actual_possessions: Dict[HalfSuit, Dict[Card.Name, Actor]] = {}
         self.move_ledger: List[Move] = []
         self.move_success: List[bool] = []
 
@@ -224,10 +227,13 @@ class Literature:
         claimed = set()
         _random_key = list(possessions.keys())[0]
         half_suit = _random_key.half_suit()
+        if half_suit in self.actual_possessions:
+            raise ValueError('{} has already been claimed'.format(half_suit))
 
         # Once a claim is submitted, all players must show the cards they
         # have for that half suit
         actual = self._claim_for_half_suit(half_suit)
+        self.actual_possessions[half_suit] = actual
         for p in self.players:
             p.memorize_claim(actual)
 

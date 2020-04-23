@@ -8,6 +8,7 @@ import literature
 from literature import (
     Card,
     Half,
+    HalfSuit,
     Literature,
     SETS,
     Suit
@@ -102,10 +103,10 @@ def test_full_room(initialized_room):
         assert HAND in recv_actions and LAST_MOVE in recv_actions
 
 
-def _last_move_from_messages(messages):
+def _action_from_messages(messages, action):
     for m in messages:
         msg = json.loads(m)
-        if msg['action'] == LAST_MOVE:
+        if msg['action'] == action:
             return msg['payload']
     raise ValueError('Last move not received')
 
@@ -117,7 +118,7 @@ def test_switching_turn(monkeypatch, initialized_room):
         assert len(i.messages) == 3
 
     # Get the current turn
-    turn = _last_move_from_messages(clients[-1].messages)['turn']
+    turn = _action_from_messages(clients[0].messages, LAST_MOVE)['turn']
     assert turn == 0
 
     monkeypatch.setattr(time, 'time', lambda: 45)
@@ -125,20 +126,24 @@ def test_switching_turn(monkeypatch, initialized_room):
     for i in clients:
         assert len(i.messages) == 5
 
-    current_turn = _last_move_from_messages(clients[-1].messages[-2:])['turn']
+    current_turn = _action_from_messages(
+        clients[0].messages[-2:], LAST_MOVE
+    )['turn']
     assert current_turn == 1
+
+
+def _get_p0_key(api, clients):
+    for i in clients:
+        reg_msg = json.loads(i.messages[0])
+        if api.users[reg_msg['payload']['uuid']].player_n == 0:
+            return reg_msg['payload']['uuid']
+    raise ValueError('Player 0 not found')
 
 
 def test_make_move(initialized_room):
     api, clients = initialized_room['api'], initialized_room['clients']
-    p0_key = None
-    for i in clients:
-        reg_msg = json.loads(i.messages[0])
-        if api.users[reg_msg['payload']['uuid']].player_n == 0:
-            p0_key = reg_msg['payload']['uuid']
-    if not p0_key:
-        raise ValueError('Player 0 not found')
     assert len(clients[0].messages) == 3
+    p0_key = _get_p0_key(api, clients)
     api.handle_message({
         'action': MOVE,
         'payload': {
@@ -148,10 +153,36 @@ def test_make_move(initialized_room):
         }
     })
     assert len(clients[0].messages) == 5
-    move = _last_move_from_messages(clients[-1].messages[-2:])
+    move = _action_from_messages(clients[0].messages[-2:], LAST_MOVE)
     assert move['success']
     assert move['interrogator'] == 0
     assert move['respondent'] == 1
     assert move['success']
     assert move['card'] == MISSING_CARD.serialize()
     assert move['turn'] == 0
+
+
+def test_claim(initialized_room):
+    api, clients = initialized_room['api'], initialized_room['clients']
+    p0_key = _get_p0_key(api, clients)
+    claim = api.game.players[0].evaluate_claims()[
+        HalfSuit(Half.MINOR, Suit.DIAMONDS)
+    ]
+    api.handle_message({
+        'action': CLAIM,
+        'payload': {
+            'key': p0_key,
+            'possessions': {
+                c.serialize(): p.unique_id for c, p in claim.items()
+            }
+        }
+    })
+    assert len(clients[0].messages) == 5
+    payload = _action_from_messages(clients[0].messages[-2:], CLAIM)
+    assert payload['claim_by'] == 0
+    assert payload['half_suit']['half'] == 'minor'
+    assert payload['half_suit']['suit'] == 'D'
+    assert payload['turn'] == 0
+    assert payload['success']
+    assert payload['score']['even'] == 1
+    assert payload['score']['odd'] == 0
