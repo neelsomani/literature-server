@@ -13,7 +13,7 @@ app.debug = 'DEBUG' in os.environ
 
 sockets = Sockets(app)
 
-api = LiteratureAPI(unique_id=uuid.uuid4().hex,
+api = LiteratureAPI(u_id=uuid.uuid4().hex,
                     logger=app.logger,
                     n_players=4,
                     time_limit=30)

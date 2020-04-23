@@ -1,3 +1,4 @@
+import gevent
 import json
 import logging
 import pytest
@@ -16,11 +17,17 @@ class MockClient:
         self.messages.append(data)
 
 
+def sync_exec(fn, *args):
+    return fn(*args)
+
+
 @pytest.fixture()
-def api():
+def api(monkeypatch):
+    # gevent does not execute for tests
+    monkeypatch.setattr(gevent, 'spawn', sync_exec)
     # Pick the first player to start
     return LiteratureAPI(
-        unique_id=MOCK_UNIQUE_ID,
+        u_id=MOCK_UNIQUE_ID,
         logger=logging.getLogger(__name__),
         n_players=4,
         time_limit=30
@@ -52,4 +59,3 @@ def test_full_room(api):
             json.loads(i.messages[2])['action']
         }
         assert HAND in recv_actions and LAST_MOVE in recv_actions
-

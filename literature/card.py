@@ -111,6 +111,9 @@ class Card:
         def __repr__(self):
             return "{0} of {1}".format(self.rank, self.suit.name[0])
 
+        def serialize(self):
+            return "{0}{1}".format(self.rank, self.suit.name[0])
+
         def half_suit(self) -> HalfSuit:
             """
             Convenience method to easily get the `HalfSuit` of this `Card`.

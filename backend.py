@@ -1,11 +1,15 @@
+from collections import namedtuple
 import json
-import uuid
 import time
+import uuid
 
 import gevent
 from literature import get_game
 
 from constants import *
+
+
+User = namedtuple('User', ['socket', 'player_n'])
 
 
 class LiteratureAPI:
@@ -15,19 +19,25 @@ class LiteratureAPI:
     """
 
     def __init__(self,
-                 unique_id,
+                 u_id,
                  logger,
                  n_players,
                  time_limit=30):
-        self.unique_id = unique_id
-        self.clients = {}
+        self.u_id = u_id
+        self.users = {}
         self.game = get_game(n_players)
         self.logger = logger
         self.n_players = n_players
         self.current_players = 0
+        # `last_executed_move` is the timestamp of the last executed move,
+        # used to determine if this game is inactive.
+        self.last_executed_move = 0
+        # `move_timestamp` gives the base time for the current time limit,
+        # which might be later than the `last_executed_move` if the turn is
+        # forcibly switched.
         self.move_timestamp = 0
         self.time_limit = time_limit
-        self.logger.info('Initialized game {}'.format(unique_id))
+        self.logger.info('Initialized game {}'.format(u_id))
 
     def register(self, client):
         """ Register a WebSocket connection for updates. """
@@ -40,9 +50,11 @@ class LiteratureAPI:
 
         self.current_players += 1
         u_id = uuid.uuid4().hex
-        while u_id in self.clients:
+        while u_id in self.users:
             u_id = uuid.uuid4().hex
-        self.clients[u_id] = client
+        # Player numbers start at 0
+        self.users[u_id] = User(socket=client,
+                                player_n=self.current_players - 1)
         self.send(client, {
             'action': REGISTER,
             'success': True,
@@ -52,9 +64,11 @@ class LiteratureAPI:
 
         if self.current_players == self.n_players:
             self.logger.info('Received {} players for game {}'.format(
-                self.n_players, self.unique_id
+                self.n_players, self.u_id
             ))
-            self.move_timestamp = time.time()
+            current_time = time.time()
+            self.move_timestamp = current_time
+            self.last_executed_move = current_time
             self._send_updated_game_state()
 
     def send(self, client, data):
@@ -65,17 +79,17 @@ class LiteratureAPI:
         try:
             client.send(json.dumps(data))
         except:
-            for u_id in self.clients:
-                if self.clients[u_id] == client:
-                    del self.clients[u_id]
+            for u_id in self.users:
+                if self.users[u_id].socket == client:
+                    del self.users[u_id]
+                    self.logger('Player {} has disconnected from game {}'
+                                .format(u_id, self.u_id))
             # TODO(@neel): Replace disconnected player with bot.
 
     def send_all(self, message):
         """ Send a message to all clients. """
-        data = message.get('data')
-        if message['type'] == 'message':
-            for client in self.clients:
-                gevent.spawn(self.send, client, data)
+        for user in self.users.values():
+            gevent.spawn(self.send, user.socket, message)
 
     def handle_message(self, message):
         action_map = {
@@ -120,20 +134,77 @@ class LiteratureAPI:
         of the turn.
         """
         self._send_last_move()
+        print('sent last move')
         self._send_hands()
+
+    def _with_player_info(self, payload):
+        """
+        Add the `move_timestamp` and `n_cards` to the dictionary.
+        """
+        payload.update({
+            'move_timestamp': self.move_timestamp,
+            'n_cards': {
+                i.unique_id: len(i.hand) for i in self.game.players
+            }
+        })
+        return payload
 
     def _send_last_move(self):
         """
-        Send the last move and each player's number of cards to
-        all players.
+        Send the last move, the current player's turn, and each player's number
+        of cards to all players.
+
+        The included fields are:
+        - `interrogator`
+        - `respondent`
+        - `card`
+        - `success`
+        - `turn`
+        - `move_timestamp`
+        - `n_cards`
+
+        If the game has just started, then `interrogator`, `respondent`, `card`,
+        and `success` will not be included.
         """
-        pass
+        # If there have been no moves executed, then the game has just started.
+        if len(self.game.move_ledger) == 0:
+            self.send_all({
+                'action': LAST_MOVE,
+                'payload': self._with_player_info({
+                    'turn': self.game.turn.unique_id
+                })
+            })
+            return
+
+        last_move, move_success = (
+            self.game.move_ledger[-1],
+            self.game.move_success[-1]
+        )
+        self.send_all({
+            'action': LAST_MOVE,
+            'payload': self._with_player_info({
+                'current_turn': self.game.turn.unique_id,
+                'interrogator': last_move.interrogator.unique_id,
+                'respondent': last_move.respondent.unique_id,
+                'card': last_move.card.serialize(),
+                'success': move_success
+            })
+        })
 
     def _send_hands(self):
         """
         Send each player their hand.
+
+        The payload will be a list with the serialized representation
+        of each card.
         """
-        pass
+        for user in self.users.values():
+            idx = user.player_n
+            player = self.game.players[idx]
+            self.send(user.socket, {
+                'action': HAND,
+                'payload': [c.serialize() for c in player.hand]
+            })
 
     def _send_complete(self):
         """
