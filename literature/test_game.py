@@ -14,11 +14,17 @@ from literature.card import (
 from literature.constants import SETS
 from literature.literature import Literature, Team
 
+MISSING_CARD = Card.Name(3, Suit.CLUBS)
+
 
 def two_player_mock(_: int) -> List[List[Card.Name]]:
+    p0_cards = [Card.Name(r, s) for r in SETS[Half.MINOR] for s in Suit]
+    p0_cards.remove(MISSING_CARD)
     return [
-        [Card.Name(r, s) for r in SETS[Half.MINOR] for s in Suit],
-        [Card.Name(r, s) for r in SETS[Half.MAJOR] for s in Suit],
+        p0_cards,
+        [
+            Card.Name(r, s) for r in SETS[Half.MAJOR] for s in Suit
+        ] + [MISSING_CARD],
         [],
         []
     ]
@@ -46,6 +52,8 @@ def test_turn_change(game):
 
 
 def test_end_game_condition(game):
+    game.commit_move(
+        game.players[0].asks(game.players[1]).to_give(MISSING_CARD))
     for c in game.players[0].evaluate_claims().values():
         game.commit_claim(Actor(0), c)
     assert game.completed
@@ -57,6 +65,8 @@ def test_end_game_condition(game):
 
 
 def test_wrong_claim_conditions(game):
+    game.commit_move(
+        game.players[0].asks(game.players[1]).to_give(MISSING_CARD))
     # Discard if we have all of the cards
     claims_0 = game.players[0].evaluate_claims()
     wrong_player = claims_0.pop(HalfSuit(Half.MINOR, Suit.DIAMONDS))
@@ -70,3 +80,9 @@ def test_wrong_claim_conditions(game):
         wrong_team[c] = Actor(0)
     game.commit_claim(Actor(0), wrong_team)
     assert game.claims[HalfSuit(Half.MAJOR, Suit.DIAMONDS)] == Team.ODD
+
+
+def test_switch_turn_if_no_cards(game):
+    game.commit_move(
+        game.players[0].asks(game.players[3]).to_give(MISSING_CARD))
+    assert game.turn == game.players[1]

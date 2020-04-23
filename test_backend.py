@@ -4,10 +4,20 @@ import logging
 import pytest
 import time
 
+import literature
+from literature import (
+    Card,
+    Half,
+    Literature,
+    SETS,
+    Suit
+)
+
 from backend import LiteratureAPI
 from constants import *
 
 MOCK_UNIQUE_ID = 1
+MISSING_CARD = Card.Name(3, Suit.CLUBS)
 
 
 class MockClient:
@@ -22,11 +32,31 @@ def sync_exec(fn, *args):
     return fn(*args)
 
 
+def two_player_mock(_):
+    p0_cards = [Card.Name(r, s) for r in SETS[Half.MINOR] for s in Suit]
+    p0_cards.remove(MISSING_CARD)
+    return [
+        p0_cards,
+        [
+            Card.Name(r, s) for r in SETS[Half.MAJOR] for s in Suit
+        ] + [MISSING_CARD],
+        [],
+        []
+    ]
+
+
+def mock_get_game(_):
+    return Literature(n_players=4,
+                      hands_fn=two_player_mock,
+                      turn_picker=lambda: 0)
+
+
 @pytest.fixture()
 def api(monkeypatch):
     # gevent does not execute for tests
     monkeypatch.setattr(gevent, 'spawn', sync_exec)
     monkeypatch.setattr(time, 'time', lambda: 0)
+    monkeypatch.setattr(literature, 'get_game', mock_get_game)
     # Pick the first player to start
     return LiteratureAPI(
         u_id=MOCK_UNIQUE_ID,
@@ -88,6 +118,7 @@ def test_switching_turn(monkeypatch, initialized_room):
 
     # Get the current turn
     turn = _turn_from_messages(clients[-1].messages)
+    assert turn == 0
 
     monkeypatch.setattr(time, 'time', lambda: 45)
     api.handle_message({'action': SWITCH_TEAM})
@@ -95,4 +126,4 @@ def test_switching_turn(monkeypatch, initialized_room):
         assert len(i.messages) == 5
 
     current_turn = _turn_from_messages(clients[-1].messages[-2:])
-    assert current_turn % 2 != turn % 2
+    assert current_turn == 1

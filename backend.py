@@ -4,7 +4,7 @@ import time
 import uuid
 
 import gevent
-from literature import get_game
+import literature
 
 from constants import *
 
@@ -25,7 +25,7 @@ class LiteratureAPI:
                  time_limit=30):
         self.u_id = u_id
         self.users = {}
-        self.game = get_game(n_players)
+        self.game = literature.get_game(n_players)
         self.logger = logger
         self.n_players = n_players
         self.current_players = 0
@@ -139,7 +139,6 @@ class LiteratureAPI:
         of the turn.
         """
         self._send_last_move()
-        print('sent last move')
         self._send_hands()
 
     def _with_player_info(self, payload):
