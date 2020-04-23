@@ -8,12 +8,14 @@ export default class VerticalCards extends Component {
             'D': [],
             'H': [],
             'S': []
-        }
-        console.log(this.props)
+        };
         this.props.cards.forEach((c) => {
             const suit = c[c.length - 1];
             suited[suit].push(c);
         });
+        for (let s in suited) {
+            suited[s].sort();
+        }
         return (
             <div>
                 <div class="hand vhand-compact active-hand">

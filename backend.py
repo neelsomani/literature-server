@@ -25,7 +25,7 @@ class LiteratureAPI:
                  u_id,
                  logger,
                  n_players,
-                 time_limit=30):
+                 time_limit=60):
         self.u_id = u_id
         self.users = {}
         self.game = literature.get_game(n_players)
