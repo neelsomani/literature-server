@@ -5,6 +5,8 @@ import pytest
 from backend import LiteratureAPI
 from constants import *
 
+MOCK_UNIQUE_ID = 1
+
 
 class MockClient:
     def __init__(self):
@@ -18,6 +20,7 @@ class MockClient:
 def api():
     # Pick the first player to start
     return LiteratureAPI(
+        unique_id=MOCK_UNIQUE_ID,
         logger=logging.getLogger(__name__),
         n_players=4,
         time_limit=30

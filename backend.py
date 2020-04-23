@@ -3,6 +3,7 @@ import uuid
 import time
 
 import gevent
+from literature import get_game
 
 from constants import *
 
@@ -13,13 +14,20 @@ class LiteratureAPI:
     for a given game.
     """
 
-    def __init__(self, logger, n_players, time_limit=30):
+    def __init__(self,
+                 unique_id,
+                 logger,
+                 n_players,
+                 time_limit=30):
+        self.unique_id = unique_id
         self.clients = {}
+        self.game = get_game(n_players)
         self.logger = logger
         self.n_players = n_players
         self.current_players = 0
-        self.move_timestamp = time.time()
+        self.move_timestamp = 0
         self.time_limit = time_limit
+        self.logger.info('Initialized game {}'.format(unique_id))
 
     def register(self, client):
         """ Register a WebSocket connection for updates. """
@@ -32,14 +40,21 @@ class LiteratureAPI:
 
         self.current_players += 1
         u_id = uuid.uuid4().hex
+        while u_id in self.clients:
+            u_id = uuid.uuid4().hex
         self.clients[u_id] = client
         self.send(client, {
             'action': REGISTER,
             'success': True,
             'uuid': u_id
         })
+        self.logger.info('Registered user {}'.format(u_id))
 
         if self.current_players == self.n_players:
+            self.logger.info('Received {} players for game {}'.format(
+                self.n_players, self.unique_id
+            ))
+            self.move_timestamp = time.time()
             self._send_updated_game_state()
 
     def send(self, client, data):
