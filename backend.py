@@ -1,4 +1,6 @@
 import json
+import uuid
+import time
 
 import gevent
 
@@ -9,21 +11,36 @@ class LiteratureAPI:
     """
     Interface for registering and updating WebSocket clients
     for a given game.
-
-    TODO(@neel): Add authentication keys for users.
-    Send authentication key when the client registers.
-    TODO(@neel): Add move_timestamp + game parameters such as time limit.
-    # Add n_players and start the game when enough players are connected.
-    TODO(@neel): Implement API.
     """
 
-    def __init__(self, logger):
-        self.clients = list()
+    def __init__(self, logger, n_players, time_limit=30):
+        self.clients = {}
         self.logger = logger
+        self.n_players = n_players
+        self.current_players = 0
+        self.move_timestamp = time.time()
+        self.time_limit = time_limit
 
     def register(self, client):
         """ Register a WebSocket connection for updates. """
-        self.clients.append(client)
+        if self.current_players == self.n_players:
+            self.send(client, {
+                'action': REGISTER,
+                'success': False
+            })
+            return
+
+        self.current_players += 1
+        u_id = uuid.uuid4().hex
+        self.clients[u_id] = client
+        self.send(client, {
+            'action': REGISTER,
+            'success': True,
+            'uuid': u_id
+        })
+
+        if self.current_players == self.n_players:
+            self._send_updated_game_state()
 
     def send(self, client, data):
         """
@@ -31,9 +48,12 @@ class LiteratureAPI:
         connections.
         """
         try:
-            client.send(data)
+            client.send(json.dumps(data))
         except:
-            self.clients.remove(client)
+            for u_id in self.clients:
+                if self.clients[u_id] == client:
+                    del self.clients[u_id]
+            # TODO(@neel): Replace disconnected player with bot.
 
     def send_all(self, message):
         """ Send a message to all clients. """
@@ -61,15 +81,15 @@ class LiteratureAPI:
         """
         Evaluate whether a player's claim is valid.
         Send the whether the player was correct in addition
-        to the correct matchings to all players.
+        to the correct pairings to all players.
         """
-        raise NotImplementedError
+        pass
 
     def _move(self, payload):
         """
         Execute a move for a player.
         """
-        raise NotImplementedError
+        pass
 
     def _switch_team(self, payload):
         """
@@ -77,7 +97,7 @@ class LiteratureAPI:
         switch the team and send the players the updated
         game state.
         """
-        raise NotImplementedError
+        pass
 
     def _send_updated_game_state(self):
         """
@@ -92,22 +112,22 @@ class LiteratureAPI:
         Send the last move and each player's number of cards to
         all players.
         """
-        raise NotImplementedError
+        pass
 
     def _send_hands(self):
         """
         Send each player their hand.
         """
-        raise NotImplementedError
+        pass
 
     def _send_complete(self):
         """
         Send that the game is in a finished state to all players.
         """
-        raise NotImplementedError
+        pass
 
     def _send_score(self):
         """
         Send the updated score to all players.
         """
-        raise NotImplementedError
+        pass
