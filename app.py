@@ -1,5 +1,6 @@
 import json
 import os
+import uuid
 
 from flask import Flask
 from flask_sockets import Sockets
@@ -11,7 +12,11 @@ app = Flask(__name__, static_folder='build/', static_url_path='/')
 app.debug = 'DEBUG' in os.environ
 
 sockets = Sockets(app)
-api = LiteratureAPI()
+
+api = LiteratureAPI(u_id=uuid.uuid4().hex,
+                    logger=app.logger,
+                    n_players=4,
+                    time_limit=30)
 
 
 @app.route('/')
