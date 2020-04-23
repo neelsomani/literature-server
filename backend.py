@@ -209,6 +209,11 @@ class LiteratureAPI:
             if self.game.switch_turn():
                 self.move_timestamp = current_time
                 self._send_updated_game_state()
+            # Otherwise, the game is over.
+            else:
+                self._send_all({
+                    'action': COMPLETE
+                })
 
     def _send_updated_game_state(self):
         """
@@ -286,9 +291,3 @@ class LiteratureAPI:
                 'action': HAND,
                 'payload': [c.serialize() for c in player.hand]
             })
-
-    def _send_complete(self):
-        """
-        Send that the game is in a finished state to all players.
-        """
-        pass
