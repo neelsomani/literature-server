@@ -180,8 +180,6 @@ class LiteratureAPI:
         """
         Execute a move for a player.
         """
-        if payload.get('key', '') not in self.users:
-            return
         interrogator = int(self.users[payload['key']].player_n)
         respondent = int(payload['respondent'])
         card_str = payload['card']
