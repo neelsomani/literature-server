@@ -42,7 +42,7 @@ class LiteratureAPI:
     def register(self, client):
         """ Register a WebSocket connection for updates. """
         if self.current_players == self.n_players:
-            self.send(client, {
+            self._send(client, {
                 'action': REGISTER,
                 'success': False
             })
@@ -55,7 +55,7 @@ class LiteratureAPI:
         # Player numbers start at 0
         self.users[u_id] = User(socket=client,
                                 player_n=self.current_players - 1)
-        self.send(client, {
+        self._send(client, {
             'action': REGISTER,
             'success': True,
             'uuid': u_id
@@ -71,7 +71,7 @@ class LiteratureAPI:
             self.last_executed_move = current_time
             self._send_updated_game_state()
 
-    def send(self, client, data):
+    def _send(self, client, data):
         """
         Send given data to the registered client. Automatically discard invalid
         connections.
@@ -86,10 +86,10 @@ class LiteratureAPI:
                                 .format(u_id, self.u_id))
             # TODO(@neel): Replace disconnected player with bot.
 
-    def send_all(self, message):
+    def _send_all(self, message):
         """ Send a message to all clients. """
         for user in self.users.values():
-            gevent.spawn(self.send, user.socket, message)
+            gevent.spawn(self._send, user.socket, message)
 
     def handle_message(self, message):
         action_map = {
@@ -120,13 +120,18 @@ class LiteratureAPI:
         """
         pass
 
-    def _switch_team(self, payload):
+    def _switch_team(self, _):
         """
         Check if the current player's time is up. If so,
         switch the team and send the players the updated
         game state.
         """
-        pass
+        current_time = time.time()
+        if abs(current_time - self.move_timestamp) >= self.time_limit:
+            # If we're able to switch the turn, then do it.
+            if self.game.switch_turn():
+                self.move_timestamp = current_time
+                self._send_updated_game_state()
 
     def _send_updated_game_state(self):
         """
@@ -168,7 +173,7 @@ class LiteratureAPI:
         """
         # If there have been no moves executed, then the game has just started.
         if len(self.game.move_ledger) == 0:
-            self.send_all({
+            self._send_all({
                 'action': LAST_MOVE,
                 'payload': self._with_player_info({
                     'turn': self.game.turn.unique_id
@@ -180,7 +185,7 @@ class LiteratureAPI:
             self.game.move_ledger[-1],
             self.game.move_success[-1]
         )
-        self.send_all({
+        self._send_all({
             'action': LAST_MOVE,
             'payload': self._with_player_info({
                 'current_turn': self.game.turn.unique_id,
@@ -201,7 +206,7 @@ class LiteratureAPI:
         for user in self.users.values():
             idx = user.player_n
             player = self.game.players[idx]
-            self.send(user.socket, {
+            self._send(user.socket, {
                 'action': HAND,
                 'payload': [c.serialize() for c in player.hand]
             })
