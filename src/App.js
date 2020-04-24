@@ -3,6 +3,7 @@ import Players from './components/Players';
 import MoveDisplay from './components/MoveDisplay';
 import Timer from './components/Timer';
 import VerticalCards from './components/VerticalCards';
+import MakeMoveModal from './components/MakeMoveModal';
 import './App.css';
 
 class App extends Component {
@@ -12,7 +13,14 @@ class App extends Component {
       uuid: '',
       hand: [],
       nPlayers: 0,
+      showMakeMoveModal: true,
     };
+  }
+
+  toggleMakeMoveModal() {
+    this.setState({
+      showMakeMoveModal: !this.state.showMakeMoveModal
+    });
   }
 
   register(payload) {
@@ -108,8 +116,13 @@ class App extends Component {
         <Timer
           moveTimestamp={this.state.moveTimestamp}
           timeLimit={this.state.timeLimit}
-          switchTeam={() => this.sendMessage({ 'action': 'switch_team' })} />
+          switchTeam={() => this.sendMessage({ 'action': 'switch_team' })}
+          playerN={this.state.playerN} />
         <VerticalCards handClass='Player-hand' cards={this.state.hand} />
+        {this.state.showMakeMoveModal && <MakeMoveModal
+          respondent={2}
+          cards={this.state.hand}
+          toggleModal={this.toggleMakeMoveModal.bind(this)} />}
       </div>
     );
   }

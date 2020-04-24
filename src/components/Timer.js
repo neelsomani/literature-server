@@ -33,7 +33,11 @@ export default class Timer extends Component {
     render() {
         const timeRemaining = this.timeRemaining()
         return <div class='Timer'>
-            {timeRemaining} second{(timeRemaining != 1) && 's'}
+            {timeRemaining} second{(timeRemaining != 1) && 's'} //
+            {(this.props.playerN != -1)
+                && this.props.playerN !== undefined
+                && (' Player ' + this.props.playerN)
+                || ' Visitor'}
         </div>
     }
 }

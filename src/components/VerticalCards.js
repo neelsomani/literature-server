@@ -2,6 +2,17 @@ import React, { Component } from 'react';
 import Card from './Card';
 
 export default class VerticalCards extends Component {
+    componentDidUpdate() {
+        window.cards.playCard = this.playCard.bind(this);
+    }
+
+    playCard(card) {
+        if (this.props.respondent) {
+            console.log(card.context.getAttribute('aria-card-name'));
+            console.log(this.props.respondent);
+        }
+    }
+
     render() {
         const suited = {
             'C': [],
@@ -18,7 +29,7 @@ export default class VerticalCards extends Component {
         }
         let suitClass = "hand vhand-compact"
         if (this.props.suitClass) {
-            suitClass += this.props.suitClass;
+            suitClass += ' ' + this.props.suitClass;
         }
         return (
             <div class={this.props.handClass}>

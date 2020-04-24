@@ -110,6 +110,9 @@ export default class Card extends Component {
     }
 
     render() {
-        return <img class='card' src={this.cardMap[this.props.card]} />
+        return <img
+            class='card'
+            aria-card-name={this.props.card}
+            src={this.cardMap[this.props.card]} />
     }
 }
