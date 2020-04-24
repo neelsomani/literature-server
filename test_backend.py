@@ -137,6 +137,15 @@ def test_switching_turn(monkeypatch, initialized_room):
     assert current_turn == 1
 
 
+def test_switch_turn_before_start(monkeypatch, api):
+    c = MockClient()
+    api.register(c)
+    assert len(c.messages) == 1
+    monkeypatch.setattr(time, 'time', lambda: 45)
+    api.handle_message({'action': SWITCH_TEAM})
+    assert len(c.messages) == 1
+
+
 def _get_p0_key(api, clients):
     for i in clients:
         reg_msg = i.messages[0]

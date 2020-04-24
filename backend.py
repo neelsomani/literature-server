@@ -213,6 +213,9 @@ class LiteratureAPI:
         switch the team and send the players the updated
         game state.
         """
+        if self.current_players < self.n_players:
+            # You cannot switch the turn if the game hasn't started
+            return
         current_time = time.time()
         if abs(current_time - self.move_timestamp) >= self.time_limit:
             # If we're able to switch the turn, then do it.
