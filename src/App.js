@@ -3,6 +3,7 @@ import Players from './components/Players';
 import MoveDisplay from './components/MoveDisplay';
 import Timer from './components/Timer';
 import VerticalCards from './components/VerticalCards';
+import MakeMoveModal from './components/MakeMoveModal';
 import './App.css';
 
 class App extends Component {
@@ -12,7 +13,45 @@ class App extends Component {
       uuid: '',
       hand: [],
       nPlayers: 0,
+      showMakeMoveModal: false
     };
+  }
+
+  playCard(card) {
+    // Make sure the user is looking at the make move modal.
+    if (this.state.showMakeMoveModal && card) {
+      this.makeMove(card, this.state.toBeRespondent);
+    }
+  }
+
+  hideMakeMoveModal() {
+    this.setState({
+      showMakeMoveModal: false,
+      toBeRespondent: undefined
+    });
+  }
+
+  showMakeMoveModal(toBeRespondent) {
+    if (this.state.turn != this.state.playerN) return;
+    if (this.state.playerN % 2 == toBeRespondent % 2) return;
+    this.setState({
+      showMakeMoveModal: true,
+      toBeRespondent
+    });
+  }
+
+  makeMove(card, toBeRespondent) {
+    this.sendMessage({
+      'action': 'move',
+      'payload': {
+        'key': this.state.uuid,
+        'respondent': toBeRespondent,
+        'card': card
+      }
+    })
+    this.setState({
+      showMakeMoveModal: false
+    });
   }
 
   register(payload) {
@@ -47,6 +86,7 @@ class App extends Component {
       respondent,
       interrogator
     })
+    if (turn != this.state.playerN) this.hideMakeMoveModal();
   }
 
   handleMessage(message) {
@@ -70,6 +110,7 @@ class App extends Component {
   }
 
   sendMessage(payload) {
+    console.log('Sending: ' + JSON.stringify(payload))
     this.state.sender.send(JSON.stringify(payload));
   }
 
@@ -89,7 +130,8 @@ class App extends Component {
     );
     this.setState({
       'sender': sender
-    })
+    });
+    window.cards.playCard = (c) => { };
   }
 
   render() {
@@ -99,7 +141,8 @@ class App extends Component {
           nPlayers={this.state.nPlayers}
           playerN={this.state.playerN}
           nCards={this.state.nCards}
-          turn={this.state.turn} />
+          turn={this.state.turn}
+          showModal={this.showMakeMoveModal.bind(this)} />
         <MoveDisplay
           success={this.state.success}
           card={this.state.card}
@@ -108,8 +151,14 @@ class App extends Component {
         <Timer
           moveTimestamp={this.state.moveTimestamp}
           timeLimit={this.state.timeLimit}
-          switchTeam={() => this.sendMessage({ 'action': 'switch_team' })} />
+          switchTeam={() => this.sendMessage({ 'action': 'switch_team' })}
+          turn={this.state.turn}
+          playerN={this.state.playerN} />
         <VerticalCards handClass='Player-hand' cards={this.state.hand} />
+        {this.state.showMakeMoveModal && <MakeMoveModal
+          hand={this.state.hand}
+          hideModal={this.hideMakeMoveModal.bind(this)}
+          playCard={this.playCard.bind(this)} />}
       </div>
     );
   }
