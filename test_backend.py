@@ -19,6 +19,8 @@ from constants import *
 
 MOCK_UNIQUE_ID = 1
 MISSING_CARD = Card.Name(3, Suit.CLUBS)
+TIME_LIMIT = 30
+N_PLAYERS = 4
 
 
 class MockClient:
@@ -46,8 +48,8 @@ def two_player_mock(_):
     ]
 
 
-def mock_get_game(_):
-    return Literature(n_players=4,
+def mock_get_game(n_players):
+    return Literature(n_players=n_players,
                       hands_fn=two_player_mock,
                       turn_picker=lambda: 0)
 
@@ -62,15 +64,15 @@ def api(monkeypatch):
     return LiteratureAPI(
         u_id=MOCK_UNIQUE_ID,
         logger=logging.getLogger(__name__),
-        n_players=4,
-        time_limit=30
+        n_players=N_PLAYERS,
+        time_limit=TIME_LIMIT
     )
 
 
 @pytest.fixture()
 def initialized_room(api):
     in_room = []
-    for _ in range(4):
+    for _ in range(N_PLAYERS):
         in_room.append(MockClient())
         api.register(in_room[-1])
     return {
@@ -85,14 +87,19 @@ def test_registration(api):
     assert len(c.messages) == 1
     msg = c.messages[0]
     assert msg['payload']['success'] and 'uuid' in msg['payload']
+    assert msg['payload']['time_limit'] == TIME_LIMIT
+    assert msg['payload']['n_players'] == N_PLAYERS
+
+
+def _action_from_messages(messages, action):
+    for msg in messages:
+        if msg['action'] == action:
+            return msg['payload']
+    raise ValueError('Action {} not received'.format(action))
 
 
 def test_full_room(initialized_room):
     api, clients = initialized_room['api'], initialized_room['clients']
-    c = MockClient()
-    api.register(c)
-    msg = c.messages[0]
-    assert not msg['payload']['success']
     for i in clients:
         assert len(i.messages) == 3
         assert i.messages[0]['action'] == REGISTER
@@ -101,13 +108,12 @@ def test_full_room(initialized_room):
             i.messages[2]['action']
         }
         assert HAND in recv_actions and LAST_MOVE in recv_actions
-
-
-def _action_from_messages(messages, action):
-    for msg in messages:
-        if msg['action'] == action:
-            return msg['payload']
-    raise ValueError('Last move not received')
+    c = MockClient()
+    api.register(c)
+    msg = _action_from_messages(c.messages, REGISTER)
+    assert not msg['success']
+    # The visitor should still receive the last move
+    assert len(c.messages) == 2
 
 
 def test_switching_turn(monkeypatch, initialized_room):
@@ -129,6 +135,15 @@ def test_switching_turn(monkeypatch, initialized_room):
         clients[0].messages[-2:], LAST_MOVE
     )['turn']
     assert current_turn == 1
+
+
+def test_switch_turn_before_start(monkeypatch, api):
+    c = MockClient()
+    api.register(c)
+    assert len(c.messages) == 1
+    monkeypatch.setattr(time, 'time', lambda: 45)
+    api.handle_message({'action': SWITCH_TEAM})
+    assert len(c.messages) == 1
 
 
 def _get_p0_key(api, clients):

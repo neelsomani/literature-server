@@ -16,18 +16,22 @@ export default class VerticalCards extends Component {
         for (let s in suited) {
             suited[s].sort();
         }
+        let suitClass = "hand vhand-compact"
+        if (this.props.suitClass) {
+            suitClass += this.props.suitClass;
+        }
         return (
-            <div>
-                <div class="hand vhand-compact active-hand">
+            <div class={this.props.handClass}>
+                <div class={suitClass}>
                     {suited['C'].map((c) => <Card card={c} />)}
                 </div>
-                <div class="hand vhand-compact active-hand">
+                <div class={suitClass}>
                     {suited['D'].map((c) => <Card card={c} />)}
                 </div>
-                <div class="hand vhand-compact active-hand">
+                <div class={suitClass}>
                     {suited['H'].map((c) => <Card card={c} />)}
                 </div>
-                <div class="hand vhand-compact active-hand">
+                <div class={suitClass}>
                     {suited['S'].map((c) => <Card card={c} />)}
                 </div>
             </div>

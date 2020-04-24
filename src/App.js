@@ -1,13 +1,52 @@
 import React, { Component } from 'react';
+import Players from './components/Players';
+import MoveDisplay from './components/MoveDisplay';
+import Timer from './components/Timer';
 import VerticalCards from './components/VerticalCards';
+import './App.css';
 
 class App extends Component {
   constructor(props) {
-    super(props)
+    super(props);
     this.state = {
       uuid: '',
-      hand: []
+      hand: [],
+      nPlayers: 0,
+    };
+  }
+
+  register(payload) {
+    const { uuid, player_n, n_players, time_limit } = payload;
+    this.setState({
+      uuid,
+      playerN: player_n,
+      nPlayers: n_players,
+      timeLimit: time_limit
+    });
+    if (!payload.success) {
+      console.log('All seats are full in the room');
     }
+  }
+
+  lastMove(payload) {
+    const {
+      n_cards,
+      move_timestamp,
+      turn,
+      success,
+      card,
+      respondent,
+      interrogator
+    } = payload;
+    this.setState({
+      nCards: n_cards,
+      moveTimestamp: move_timestamp,
+      turn,
+      success,
+      card,
+      respondent,
+      interrogator
+    })
   }
 
   handleMessage(message) {
@@ -15,26 +54,23 @@ class App extends Component {
     console.log('Received: ' + JSON.stringify(data));
     switch (data.action) {
       case 'register':
-        if (data.payload.success) {
-          this.setState({
-            uuid: data.payload.uuid
-          })
-        } else {
-          console.log('All seats are full in the room');
-        }
+        this.register(data.payload)
         break;
       case 'hand':
         this.setState({
           hand: data.payload
-        })
+        });
+        break;
+      case 'last_move':
+        this.lastMove(data.payload)
         break;
       default:
         console.log('Unhandled action: ' + data.action);
     }
   }
 
-  sendMessage(message) {
-    this.sender.send(JSON.stringify({ message }));
+  sendMessage(payload) {
+    this.state.sender.send(JSON.stringify(payload));
   }
 
   componentDidMount() {
@@ -48,15 +84,9 @@ class App extends Component {
       ws_scheme + window.location.host + "/receive"
     );
     receiver.onmessage = this.handleMessage.bind(this);
-    receiver.onclose = function () {
-      this.receiver = new WebSocket(receiver.url);
-    };
     let sender = new window.ReconnectingWebSocket(
       ws_scheme + window.location.host + "/submit"
     );
-    sender.onclose = function () {
-      this.sender = new WebSocket(sender.url);
-    };
     this.setState({
       'sender': sender
     })
@@ -64,7 +94,23 @@ class App extends Component {
 
   render() {
     return (
-      <VerticalCards cards={this.state.hand} />
+      <div>
+        <Players
+          nPlayers={this.state.nPlayers}
+          playerN={this.state.playerN}
+          nCards={this.state.nCards}
+          turn={this.state.turn} />
+        <MoveDisplay
+          success={this.state.success}
+          card={this.state.card}
+          interrogator={this.state.interrogator}
+          respondent={this.state.respondent} />
+        <Timer
+          moveTimestamp={this.state.moveTimestamp}
+          timeLimit={this.state.timeLimit}
+          switchTeam={() => this.sendMessage({ 'action': 'switch_team' })} />
+        <VerticalCards handClass='Player-hand' cards={this.state.hand} />
+      </div>
     );
   }
 }

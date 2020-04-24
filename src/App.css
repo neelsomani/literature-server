@@ -1,24 +1,44 @@
-.App {
+.Player-hand {
+  bottom: 10%;
+  position: absolute;
+  width: 100%;
   text-align: center;
 }
 
-.App-logo {
-  animation: App-logo-spin infinite 20s linear;
-  height: 80px;
+.Players {
+  position: absolute;
+  top: 5%;
+  left: 5%;
+  display: flex;
+  justify-content: space-between;
+  width: 90%;
 }
 
-.App-header {
-  background-color: #222;
-  height: 150px;
-  padding: 20px;
-  color: white;
+.Player {
+  width: 100px;
+  height: 100px;
 }
 
-.App-intro {
-  font-size: large;
+.MoveDisplay {
+  width: 50%;
+  top: 50%;
+  left: 50%;
+  position: absolute;
+  margin-left: -25%;
+  margin-top: -1em;
+  font-size: 2em;
+  text-align: center;
+  color: #c0c0c0;
 }
 
-@keyframes App-logo-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+.Timer {
+  width: 98%;
+  left: 0;
+  padding-left: 2%;
+  bottom: 0;
+  position: absolute;
+  background-color: white;
+  font-weight: bold;
+  padding-top: 2%;
+  padding-bottom: 2%;
 }
