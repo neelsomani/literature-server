@@ -9,7 +9,7 @@ export default class Players extends Component {
             border: 'solid 3px white'
         } || {};
         return <div
-            class='Player'
+            className='Player'
             style={border}
             onClick={() => this.props.showModal(this.props.playerN)}>
             <img

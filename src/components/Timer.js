@@ -41,7 +41,7 @@ export default class Timer extends Component {
                 <img src={img} height={15} width={15} /> Player {this.props.playerN}
             </span>
         )
-        return <div class='Timer'>
+        return <div className='Timer'>
             {timeRemaining} second{(timeRemaining != 1) && 's'} //
             {(this.props.playerN != -1)
                 && this.props.playerN !== undefined

@@ -28,7 +28,6 @@ export default class MakeMoveModal extends Component {
                 });
             });
         });
-        console.log(this.state);
     }
 
     render() {
