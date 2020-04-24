@@ -10,11 +10,46 @@ class App extends Component {
   RUNNING = 'running';
 
   constructor(props) {
-    super(props)
+    super(props);
     this.state = {
       uuid: '',
       hand: []
+    };
+  }
+
+  register(payload) {
+    const { uuid, player_n, n_players, time_limit } = payload;
+    this.setState({
+      uuid,
+      playerN: player_n,
+      nPlayers: n_players,
+      timeLimit: time_limit,
+      gameStatus: this.NOT_STARTED
+    });
+    if (!payload.success) {
+      console.log('All seats are full in the room');
     }
+  }
+
+  lastMove(payload) {
+    const {
+      n_cards,
+      move_timestamp,
+      turn,
+      success,
+      card,
+      respondent,
+      interrogator
+    } = payload;
+    this.setState({
+      nCards: n_cards,
+      moveTimestamp: move_timestamp,
+      turn,
+      success,
+      card,
+      respondent,
+      interrogator
+    })
   }
 
   handleMessage(message) {
@@ -22,17 +57,7 @@ class App extends Component {
     console.log('Received: ' + JSON.stringify(data));
     switch (data.action) {
       case 'register':
-        const { uuid, player_n, n_players, time_limit } = data.payload;
-        this.setState({
-          uuid,
-          playerN: player_n,
-          nPlayers: n_players,
-          timeLimit: time_limit,
-          gameStatus: this.NOT_STARTED
-        });
-        if (!data.payload.success) {
-          console.log('All seats are full in the room');
-        }
+        this.register(data.payload)
         break;
       case 'hand':
         this.setState({
@@ -41,32 +66,15 @@ class App extends Component {
         });
         break;
       case 'last_move':
-        const {
-          n_cards,
-          move_timestamp,
-          turn,
-          success,
-          card,
-          respondent,
-          interrogator
-        } = data.payload;
-        this.setState({
-          nCards: n_cards,
-          moveTimestamp: move_timestamp,
-          turn,
-          success,
-          card,
-          respondent,
-          interrogator
-        })
+        this.lastMove(data.payload)
         break;
       default:
         console.log('Unhandled action: ' + data.action);
     }
   }
 
-  sendMessage(message) {
-    this.sender.send(JSON.stringify({ message }));
+  sendMessage(payload) {
+    this.state.sender.send(JSON.stringify(payload));
   }
 
   componentDidMount() {
@@ -80,15 +88,9 @@ class App extends Component {
       ws_scheme + window.location.host + "/receive"
     );
     receiver.onmessage = this.handleMessage.bind(this);
-    receiver.onclose = function () {
-      this.receiver = new WebSocket(receiver.url);
-    };
     let sender = new window.ReconnectingWebSocket(
       ws_scheme + window.location.host + "/submit"
     );
-    sender.onclose = function () {
-      this.sender = new WebSocket(sender.url);
-    };
     this.setState({
       'sender': sender
     })
@@ -107,7 +109,10 @@ class App extends Component {
           card={this.state.card}
           interrogator={this.state.interrogator}
           respondent={this.state.respondent} />
-        <Timer moveTimestamp={this.state.moveTimestamp} />
+        <Timer
+          moveTimestamp={this.state.moveTimestamp}
+          timeLimit={this.state.timeLimit}
+          switchTeam={() => this.sendMessage({ 'action': 'switch_team' })} />
         <VerticalCards handClass='Player-hand' cards={this.state.hand} />
       </div>
     );

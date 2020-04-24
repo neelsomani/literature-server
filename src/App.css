@@ -30,3 +30,15 @@
   text-align: center;
   color: #c0c0c0;
 }
+
+.Timer {
+  width: 98%;
+  left: 0;
+  padding-left: 2%;
+  bottom: 0;
+  position: absolute;
+  background-color: white;
+  font-weight: bold;
+  padding-top: 2%;
+  padding-bottom: 2%;
+}
