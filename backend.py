@@ -8,6 +8,9 @@ import literature
 from constants import *
 
 
+VISITOR_PLAYER_ID = -1
+
+
 class User:
     def __init__(self, socket, player_n, connected):
         self.socket = socket
@@ -42,35 +45,36 @@ class LiteratureAPI:
         self.time_limit = time_limit
         self.logger.info('Initialized game {}'.format(u_id))
 
-    def register(self, client):
-        """ Register a WebSocket connection for updates. """
-        if self.current_players == self.n_players:
-            self._send(client, {
-                'action': REGISTER,
-                'payload': {
-                    'success': False,
-                    'n_players': self.n_players,
-                    'time_limit': self.time_limit
-                }
-            })
-            return
-
-        self.current_players += 1
+    def _uuid(self):
         u_id = uuid.uuid4().hex
         while u_id in self.users:
             u_id = uuid.uuid4().hex
-        # Player numbers start at 0
+        return u_id
+
+    def register(self, client):
+        """ Register a WebSocket connection for updates. """
+        payload = {}
+        if self.current_players >= self.n_players:
+            payload['success'] = False
+            player_n = VISITOR_PLAYER_ID
+        else:
+            payload['success'] = True
+            player_n = self.current_players
+
+        self.current_players += 1
+        u_id = self._uuid()
         self.users[u_id] = User(socket=client,
-                                player_n=self.current_players - 1,
-                                connected=True)
-        self._send(client, {
+                                player_n=player_n,
+                                connected=payload['success'])
+        payload.update({
+            'n_players': self.n_players,
+            'time_limit': self.time_limit,
+            'player_n': player_n,
+            'uuid': u_id
+        })
+        gevent.spawn(self._send, client, {
             'action': REGISTER,
-            'payload': {
-                'success': True,
-                'n_players': self.n_players,
-                'time_limit': self.time_limit,
-                'uuid': u_id
-            }
+            'payload': payload
         })
         self.logger.info('Registered user {}'.format(u_id))
 
@@ -81,6 +85,10 @@ class LiteratureAPI:
             current_time = time.time()
             self.move_timestamp = current_time
             self.last_executed_move = current_time
+
+        # Send the latest game state to all players if we have the minimum
+        # number of players.
+        if self.current_players >= self.n_players:
             self._send_updated_game_state()
 
     def _send(self, client, data):
@@ -286,10 +294,10 @@ class LiteratureAPI:
         The payload will be a list with the serialized representation
         of each card.
         """
-        for user in self.users.values():
+        for user in [u for u in self.users.values() if u.connected]:
             idx = user.player_n
             player = self.game.players[idx]
-            self._send(user.socket, {
+            gevent.spawn(self._send, user.socket, {
                 'action': HAND,
                 'payload': [c.serialize() for c in player.hand]
             })

@@ -1,7 +1,14 @@
 import React, { Component } from 'react';
+import Players from './components/Players';
+import MoveDisplay from './components/MoveDisplay';
+import Timer from './components/Timer';
 import VerticalCards from './components/VerticalCards';
+import './App.css';
 
 class App extends Component {
+  NOT_STARTED = 'not_started';
+  RUNNING = 'running';
+
   constructor(props) {
     super(props)
     this.state = {
@@ -15,17 +22,42 @@ class App extends Component {
     console.log('Received: ' + JSON.stringify(data));
     switch (data.action) {
       case 'register':
-        if (data.payload.success) {
-          this.setState({
-            uuid: data.payload.uuid
-          })
-        } else {
+        const { uuid, player_n, n_players, time_limit } = data.payload;
+        this.setState({
+          uuid,
+          playerN: player_n,
+          nPlayers: n_players,
+          timeLimit: time_limit,
+          gameStatus: this.NOT_STARTED
+        });
+        if (!data.payload.success) {
           console.log('All seats are full in the room');
         }
         break;
       case 'hand':
         this.setState({
-          hand: data.payload
+          hand: data.payload,
+          gameStatus: this.RUNNING
+        });
+        break;
+      case 'last_move':
+        const {
+          n_cards,
+          move_timestamp,
+          turn,
+          success,
+          card,
+          respondent,
+          interrogator
+        } = data.payload;
+        this.setState({
+          nCards: n_cards,
+          moveTimestamp: move_timestamp,
+          turn,
+          success,
+          card,
+          respondent,
+          interrogator
         })
         break;
       default:
@@ -64,7 +96,20 @@ class App extends Component {
 
   render() {
     return (
-      <VerticalCards cards={this.state.hand} />
+      <div>
+        <Players
+          nPlayers={this.state.nPlayers}
+          playerN={this.state.playerN}
+          nCards={this.state.nCards}
+          turn={this.state.turn} />
+        <MoveDisplay
+          success={this.state.success}
+          card={this.state.card}
+          interrogator={this.state.interrogator}
+          respondent={this.state.respondent} />
+        <Timer moveTimestamp={this.state.moveTimestamp} />
+        <VerticalCards handClass='Player-hand' cards={this.state.hand} />
+      </div>
     );
   }
 }

@@ -91,12 +91,15 @@ def test_registration(api):
     assert msg['payload']['n_players'] == N_PLAYERS
 
 
+def _action_from_messages(messages, action):
+    for msg in messages:
+        if msg['action'] == action:
+            return msg['payload']
+    raise ValueError('Action {} not received'.format(action))
+
+
 def test_full_room(initialized_room):
     api, clients = initialized_room['api'], initialized_room['clients']
-    c = MockClient()
-    api.register(c)
-    msg = c.messages[0]
-    assert not msg['payload']['success']
     for i in clients:
         assert len(i.messages) == 3
         assert i.messages[0]['action'] == REGISTER
@@ -105,13 +108,12 @@ def test_full_room(initialized_room):
             i.messages[2]['action']
         }
         assert HAND in recv_actions and LAST_MOVE in recv_actions
-
-
-def _action_from_messages(messages, action):
-    for msg in messages:
-        if msg['action'] == action:
-            return msg['payload']
-    raise ValueError('Last move not received')
+    c = MockClient()
+    api.register(c)
+    msg = _action_from_messages(c.messages, REGISTER)
+    assert not msg['success']
+    # The visitor should still receive the last move
+    assert len(c.messages) == 2
 
 
 def test_switching_turn(monkeypatch, initialized_room):
