@@ -31,7 +31,7 @@ export default class MakeMoveModal extends Component {
     }
 
     render() {
-        return <div class='MakeMoveCover'>
+        return <div className='MakeMoveCover'>
             <div style={{
                 width: '100%',
                 height: '100%',
@@ -40,7 +40,7 @@ export default class MakeMoveModal extends Component {
                 left: 0,
                 zIndex: 5
             }} onClick={this.props.hideModal}></div>
-            <div class='CardSelector' style={{ zIndex: 10 }}>
+            <div className='CardSelector' style={{ zIndex: 10 }}>
                 <VerticalCards
                     playCard={this.props.playCard}
                     suitClass='active-hand'

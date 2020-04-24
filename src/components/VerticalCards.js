@@ -45,21 +45,25 @@ export default class VerticalCards extends Component {
             <div className={this.props.handClass}>
                 <div className={suitClass}>
                     {suited['C'].map((c) => <Card
+                        key={'card-' + c}
                         playCard={this.props.playCard}
                         card={c} />)}
                 </div>
                 <div className={suitClass}>
                     {suited['D'].map((c) => <Card
+                        key={'card-' + c}
                         playCard={this.props.playCard}
                         card={c} />)}
                 </div>
                 <div className={suitClass}>
                     {suited['H'].map((c) => <Card
+                        key={'card-' + c}
                         playCard={this.props.playCard}
                         card={c} />)}
                 </div>
                 <div className={suitClass}>
                     {suited['S'].map((c) => <Card
+                        key={'card-' + c}
                         playCard={this.props.playCard}
                         card={c} />)}
                 </div>

@@ -9,6 +9,7 @@ export default class Players extends Component {
             ].map((p) => {
                 if (p != this.props.playerN) {
                     return <Player
+                        key={'player_' + p}
                         showModal={this.props.showModal}
                         turn={this.props.turn}
                         playerN={p}
