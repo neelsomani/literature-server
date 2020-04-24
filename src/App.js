@@ -6,14 +6,12 @@ import VerticalCards from './components/VerticalCards';
 import './App.css';
 
 class App extends Component {
-  NOT_STARTED = 'not_started';
-  RUNNING = 'running';
-
   constructor(props) {
     super(props);
     this.state = {
       uuid: '',
-      hand: []
+      hand: [],
+      nPlayers: 0,
     };
   }
 
@@ -23,8 +21,7 @@ class App extends Component {
       uuid,
       playerN: player_n,
       nPlayers: n_players,
-      timeLimit: time_limit,
-      gameStatus: this.NOT_STARTED
+      timeLimit: time_limit
     });
     if (!payload.success) {
       console.log('All seats are full in the room');
@@ -61,8 +58,7 @@ class App extends Component {
         break;
       case 'hand':
         this.setState({
-          hand: data.payload,
-          gameStatus: this.RUNNING
+          hand: data.payload
         });
         break;
       case 'last_move':
