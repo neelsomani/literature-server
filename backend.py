@@ -48,7 +48,9 @@ class LiteratureAPI:
             self._send(client, {
                 'action': REGISTER,
                 'payload': {
-                    'success': False
+                    'success': False,
+                    'n_players': self.n_players,
+                    'time_limit': self.time_limit
                 }
             })
             return
@@ -65,6 +67,8 @@ class LiteratureAPI:
             'action': REGISTER,
             'payload': {
                 'success': True,
+                'n_players': self.n_players,
+                'time_limit': self.time_limit,
                 'uuid': u_id
             }
         })
@@ -223,11 +227,10 @@ class LiteratureAPI:
 
     def _with_player_info(self, payload):
         """
-        Add the `move_timestamp`, `time_limit` and `n_cards` to the dictionary.
+        Add the `move_timestamp` and `n_cards` to the dictionary.
         """
         payload.update({
             'move_timestamp': self.move_timestamp,
-            'time_limit': self.time_limit,
             'n_cards': {
                 i.unique_id: len(i.hand) for i in self.game.players
             }

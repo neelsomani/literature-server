@@ -19,6 +19,8 @@ from constants import *
 
 MOCK_UNIQUE_ID = 1
 MISSING_CARD = Card.Name(3, Suit.CLUBS)
+TIME_LIMIT = 30
+N_PLAYERS = 4
 
 
 class MockClient:
@@ -46,8 +48,8 @@ def two_player_mock(_):
     ]
 
 
-def mock_get_game(_):
-    return Literature(n_players=4,
+def mock_get_game(n_players):
+    return Literature(n_players=n_players,
                       hands_fn=two_player_mock,
                       turn_picker=lambda: 0)
 
@@ -62,15 +64,15 @@ def api(monkeypatch):
     return LiteratureAPI(
         u_id=MOCK_UNIQUE_ID,
         logger=logging.getLogger(__name__),
-        n_players=4,
-        time_limit=30
+        n_players=N_PLAYERS,
+        time_limit=TIME_LIMIT
     )
 
 
 @pytest.fixture()
 def initialized_room(api):
     in_room = []
-    for _ in range(4):
+    for _ in range(N_PLAYERS):
         in_room.append(MockClient())
         api.register(in_room[-1])
     return {
@@ -85,6 +87,8 @@ def test_registration(api):
     assert len(c.messages) == 1
     msg = c.messages[0]
     assert msg['payload']['success'] and 'uuid' in msg['payload']
+    assert msg['payload']['time_limit'] == TIME_LIMIT
+    assert msg['payload']['n_players'] == N_PLAYERS
 
 
 def test_full_room(initialized_room):
