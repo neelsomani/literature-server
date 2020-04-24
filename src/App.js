@@ -24,7 +24,7 @@ class App extends Component {
     }
   }
 
-  hideMakeMoveModal(toBeRespondent) {
+  hideMakeMoveModal() {
     this.setState({
       showMakeMoveModal: false,
       toBeRespondent: undefined
@@ -33,6 +33,7 @@ class App extends Component {
 
   showMakeMoveModal(toBeRespondent) {
     if (this.state.turn != this.state.playerN) return;
+    if (this.state.playerN % 2 == toBeRespondent % 2) return;
     this.setState({
       showMakeMoveModal: true,
       toBeRespondent
@@ -85,6 +86,7 @@ class App extends Component {
       respondent,
       interrogator
     })
+    if (turn != this.state.playerN) this.hideMakeMoveModal();
   }
 
   handleMessage(message) {
@@ -150,10 +152,11 @@ class App extends Component {
           moveTimestamp={this.state.moveTimestamp}
           timeLimit={this.state.timeLimit}
           switchTeam={() => this.sendMessage({ 'action': 'switch_team' })}
+          turn={this.state.turn}
           playerN={this.state.playerN} />
         <VerticalCards handClass='Player-hand' cards={this.state.hand} />
         {this.state.showMakeMoveModal && <MakeMoveModal
-          cards={this.state.hand}
+          hand={this.state.hand}
           hideModal={this.hideMakeMoveModal.bind(this)}
           playCard={this.playCard.bind(this)} />}
       </div>

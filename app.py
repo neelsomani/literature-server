@@ -16,7 +16,7 @@ sockets = Sockets(app)
 api = LiteratureAPI(u_id=uuid.uuid4().hex,
                     logger=app.logger,
                     n_players=4,
-                    time_limit=10)
+                    time_limit=30)
 
 
 @app.route('/')

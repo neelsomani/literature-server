@@ -2,6 +2,35 @@ import React, { Component } from 'react';
 import VerticalCards from './VerticalCards';
 
 export default class MakeMoveModal extends Component {
+    sets = [
+        ['A', '2', '3', '4', '5', '6'],
+        ['8', '9', '10', 'J', 'Q', 'K']
+    ]
+    suits = ['C', 'D', 'H', 'S']
+
+    constructor(props) {
+        super(props);
+        const hand = new Set(props.hand);
+        this.state = {
+            cards: []
+        }
+        this.sets.forEach((set) => {
+            this.suits.forEach((s) => {
+                let canAskHalf = false;
+                set.forEach((r) => {
+                    if (hand.has(r + s)) canAskHalf = true;
+                });
+                if (!canAskHalf) return;
+                set.forEach((r) => {
+                    if (!hand.has(r + s)) {
+                        this.state.cards.push((r + s))
+                    }
+                });
+            });
+        });
+        console.log(this.state);
+    }
+
     render() {
         return <div class='MakeMoveCover'>
             <div style={{
@@ -16,7 +45,7 @@ export default class MakeMoveModal extends Component {
                 <VerticalCards
                     playCard={this.props.playCard}
                     suitClass='active-hand'
-                    cards={['AS', '2S', '3C', '2C', 'AH', 'KD']} />
+                    cards={this.state.cards} />
             </div>
         </div>
     }

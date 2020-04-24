@@ -1,5 +1,8 @@
 import React, { Component } from 'react';
 
+import PlayerEvenIcon from './player-even.png';
+import PlayerOddIcon from './player-odd.png';
+
 export default class Timer extends Component {
     constructor(props) {
         super(props);
@@ -32,12 +35,20 @@ export default class Timer extends Component {
 
     render() {
         const timeRemaining = this.timeRemaining()
+        const img = [PlayerEvenIcon, PlayerOddIcon][this.props.playerN % 2]
+        const icon = (
+            <span style={{ paddingLeft: '10px', paddingRight: '10px' }}>
+                <img src={img} height={15} width={15} /> Player {this.props.playerN}
+            </span>
+        )
         return <div class='Timer'>
             {timeRemaining} second{(timeRemaining != 1) && 's'} //
             {(this.props.playerN != -1)
                 && this.props.playerN !== undefined
-                && (' Player ' + this.props.playerN)
+                && icon
                 || ' Visitor'}
+            {(this.props.turn !== undefined && this.props.playerN == this.props.turn)
+                && '// Click a player from the opposite team to request a card'}
         </div>
     }
 }
