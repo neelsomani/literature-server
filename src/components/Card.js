@@ -112,6 +112,7 @@ export default class Card extends Component {
     render() {
         return <img
             class='card'
+            onClick={() => { this.props.playCard(this.props.card) }}
             aria-card-name={this.props.card}
             src={this.cardMap[this.props.card]} />
     }

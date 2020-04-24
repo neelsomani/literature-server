@@ -13,13 +13,43 @@ class App extends Component {
       uuid: '',
       hand: [],
       nPlayers: 0,
-      showMakeMoveModal: true,
+      showMakeMoveModal: false
     };
   }
 
-  toggleMakeMoveModal() {
+  playCard(card) {
+    // Make sure the user is looking at the make move modal.
+    if (this.state.showMakeMoveModal && card) {
+      this.makeMove(card, this.state.toBeRespondent);
+    }
+  }
+
+  hideMakeMoveModal(toBeRespondent) {
     this.setState({
-      showMakeMoveModal: !this.state.showMakeMoveModal
+      showMakeMoveModal: false,
+      toBeRespondent: undefined
+    });
+  }
+
+  showMakeMoveModal(toBeRespondent) {
+    if (this.state.turn != this.state.playerN) return;
+    this.setState({
+      showMakeMoveModal: true,
+      toBeRespondent
+    });
+  }
+
+  makeMove(card, toBeRespondent) {
+    this.sendMessage({
+      'action': 'move',
+      'payload': {
+        'key': this.state.uuid,
+        'respondent': toBeRespondent,
+        'card': card
+      }
+    })
+    this.setState({
+      showMakeMoveModal: false
     });
   }
 
@@ -78,6 +108,7 @@ class App extends Component {
   }
 
   sendMessage(payload) {
+    console.log('Sending: ' + JSON.stringify(payload))
     this.state.sender.send(JSON.stringify(payload));
   }
 
@@ -97,7 +128,8 @@ class App extends Component {
     );
     this.setState({
       'sender': sender
-    })
+    });
+    window.cards.playCard = (c) => { };
   }
 
   render() {
@@ -107,7 +139,8 @@ class App extends Component {
           nPlayers={this.state.nPlayers}
           playerN={this.state.playerN}
           nCards={this.state.nCards}
-          turn={this.state.turn} />
+          turn={this.state.turn}
+          showModal={this.showMakeMoveModal.bind(this)} />
         <MoveDisplay
           success={this.state.success}
           card={this.state.card}
@@ -120,9 +153,9 @@ class App extends Component {
           playerN={this.state.playerN} />
         <VerticalCards handClass='Player-hand' cards={this.state.hand} />
         {this.state.showMakeMoveModal && <MakeMoveModal
-          respondent={2}
           cards={this.state.hand}
-          toggleModal={this.toggleMakeMoveModal.bind(this)} />}
+          hideModal={this.hideMakeMoveModal.bind(this)}
+          playCard={this.playCard.bind(this)} />}
       </div>
     );
   }
