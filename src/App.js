@@ -105,7 +105,7 @@ class App extends Component {
         this.lastMove(data.payload)
         break;
       default:
-        console.log('Unhandled action: ' + data.action);
+        throw 'Unhandled action: ' + data.action;
     }
   }
 

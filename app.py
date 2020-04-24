@@ -31,7 +31,7 @@ def static_file(path):
 
 @sockets.route('/submit')
 def submit(ws):
-    """ Receives incoming chat messages, sends to all clients. """
+    """ Receive incoming messages. """
     while not ws.closed:
         gevent.sleep(0.1)
         msg = ws.receive()

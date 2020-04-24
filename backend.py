@@ -118,7 +118,7 @@ class LiteratureAPI:
             MOVE: self._move,
             SWITCH_TEAM: self._switch_team
         }
-        fn = action_map[message.get('action', '')]
+        fn = action_map.get(message['action'], None)
         if fn is None:
             self.logger.exception(
                 'Received bad action for message: {}'
