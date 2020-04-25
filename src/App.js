@@ -7,13 +7,11 @@ import CardGroup from './components/CardGroup';
 import MakeMoveModal from './components/MakeMoveModal';
 import ClaimModal from './components/ClaimModal';
 import CorrectClaimModal from './components/CorrectClaimModal';
-import SetsDisplay from './components/SetsDisplay';
+import ScoreDisplay from './components/ScoreDisplay';
 import {
   SET_INDICATORS,
-  EVEN,
-  ODD,
-  NEITHER,
-  DISCARD,
+  CLAIMED,
+  UNCLAIMED,
   SET_NAME_MAP
 } from './components/Constants';
 import './App.css';
@@ -22,7 +20,7 @@ class App extends Component {
   constructor(props) {
     super(props);
     const claims = {};
-    SET_INDICATORS.forEach((s) => claims[s] = NEITHER);
+    SET_INDICATORS.forEach((s) => claims[s] = UNCLAIMED);
     this.state = {
       uuid: '',
       hand: [],
@@ -84,11 +82,11 @@ class App extends Component {
 
   makeMove(card, toBeRespondent) {
     this.sendMessage({
-      'action': 'move',
-      'payload': {
-        'key': this.state.uuid,
-        'respondent': toBeRespondent,
-        'card': card
+      action: 'move',
+      payload: {
+        key: this.state.uuid,
+        respondent: toBeRespondent,
+        card
       }
     })
     this.setState({
@@ -133,6 +131,37 @@ class App extends Component {
     if (turn != this.state.playerN) this.hideMakeMoveModal();
   }
 
+  claim(payload) {
+    const {
+      move_timestamp,
+      n_cards,
+      claim_by,
+      half_suit,
+      turn,
+      success,
+      truth,
+      score
+    } = payload;
+    if (turn == this.state.playerN && turn != this.state.turn)
+      this.bell.play();
+    const claims = { ...this.state.claims };
+    claims[SET_NAME_MAP[half_suit.half] + half_suit.suit] = CLAIMED;
+    this.setState({
+      nCards: n_cards,
+      moveTimestamp: move_timestamp,
+      turn,
+      score,
+      claims,
+      lastClaim: {
+        claimBy: claim_by,
+        success,
+        truth,
+        halfSuit: half_suit
+      }
+    })
+    if (turn != this.state.playerN) this.hideMakeMoveModal();
+  }
+
   handleMessage(message) {
     let data = JSON.parse(message.data);
     console.log('Received: ' + JSON.stringify(data));
@@ -147,6 +176,9 @@ class App extends Component {
         break;
       case 'last_move':
         this.lastMove(data.payload)
+        break;
+      case 'claim':
+        this.claim(data.payload)
         break;
       default:
         throw 'Unhandled action: ' + data.action;
@@ -207,11 +239,13 @@ class App extends Component {
         <CardGroup
           handClass='Player-hand'
           suitClass='vhand-compact'
-          cards={this.state.hand} />
+          cards={this.state.hand}
+          claims={this.state.claims} />
         {this.state.showMakeMoveModal && <MakeMoveModal
           hand={this.state.hand}
           hideModal={this.hideMakeMoveModal.bind(this)}
-          playCard={this.playCard.bind(this)} />}
+          playCard={this.playCard.bind(this)}
+          claims={this.state.claims} />}
         {this.state.showClaimModal && <ClaimModal
           playerN={this.state.playerN}
           nPlayers={this.state.nPlayers}
@@ -229,7 +263,7 @@ class App extends Component {
             hideModal={() => { this.setState({ showFullClaim: false }) }}
           />}
 
-        <SetsDisplay score={this.state.score} />
+        <ScoreDisplay score={this.state.score} />
         {this.state.playerN != -1 && <button
           className='ClaimButton'
           onClick={() => this.setState({ showClaimModal: true })}>Make Claim</button>}

@@ -4,9 +4,9 @@ import PlayerEvenIcon from './player-even.png';
 import PlayerOddIcon from './player-odd.png';
 import DiscardIcon from './no.png';
 
-export default class SetsDisplay extends Component {
+export default class ScoreDisplay extends Component {
     render() {
-        return <div className='SetsDisplay'>
+        return <div className='ScoreDisplay'>
             <table>
                 <tbody>
                     <tr>

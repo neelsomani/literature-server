@@ -40,7 +40,8 @@ export default class MakeMoveModal extends Component {
                 <CardGroup
                     clickCard={this.props.playCard}
                     suitClass='vhand-compact active-hand'
-                    cards={this.state.cards} />
+                    cards={this.state.cards}
+                    claims={this.props.claims} />
             </div>
         </div>
     }

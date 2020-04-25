@@ -30,7 +30,5 @@ export const CARD_TO_NUMBER = {
     'K': 13
 }
 
-export const EVEN = 'even';
-export const ODD = 'odd';
-export const NEITHER = 'neither';
-export const DISCARD = 'discard';
+export const CLAIMED = 'claimed';
+export const UNCLAIMED = 'unclaimed';

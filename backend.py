@@ -243,7 +243,7 @@ class LiteratureAPI:
         payload.update({
             'move_timestamp': self.move_timestamp,
             'n_cards': {
-                i.unique_id: len(i.hand) for i in self.game.players
+                i.unique_id: i.unclaimed_cards() for i in self.game.players
             }
         })
         return payload

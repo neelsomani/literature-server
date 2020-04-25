@@ -43,6 +43,45 @@ function initSixPlayerGame() {
     }));
 }
 
+function _receivedClaim() {
+  return {
+    action: 'claim',
+    payload: {
+      move_timestamp: 0,
+      n_cards: {
+        0: 8,
+        1: 8,
+        2: 8,
+        3: 8,
+        4: 8,
+        5: 8,
+        6: 8
+      },
+      claim_by: 4,
+      half_suit: {
+        half: 'minor',
+        suit: 'S'
+      },
+      turn: 4,
+      success: true,
+      truth: {
+        AS: 0,
+        '2S': 2,
+        '3S': 2,
+        '4S': 2,
+        '5S': 4,
+        '6S': 4
+      },
+      score: {
+        even: 1,
+        odd: 2,
+        discard: 3,
+        neither: 0
+      }
+    }
+  };
+}
+
 function _lastMove() {
   return {
     action: 'last_move',
@@ -139,4 +178,17 @@ it('handles making moves correctly', () => {
   expect(move.action).toBe('move');
   expect(move.payload.key).toBe(PLAYER_KEY);
   expect(move.payload.respondent).toBe(1);
+})
+
+it('handles claims correctly', () => {
+  initSixPlayerGame();
+  expect(container.getElementsByClassName('ClaimText')).toHaveLength(0);
+  socketWrapper.socket.onmessage(serialize(_receivedClaim()));
+  expect(container.getElementsByClassName('ClaimText')).toHaveLength(1);
+  expect(container.getElementsByClassName('EvenScore')[0]).toHaveProperty(
+    'innerHTML', '1');
+  expect(container.getElementsByClassName('OddScore')[0]).toHaveProperty(
+    'innerHTML', '2');
+  expect(container.getElementsByClassName('DiscardScore')[0]).toHaveProperty(
+    'innerHTML', '3');
 })

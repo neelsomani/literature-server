@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import CardGroup from './CardGroup';
 import SetSelector from './SetSelector';
-import { NEITHER, SET_INDICATORS } from './Constants';
+import { UNCLAIMED, SET_INDICATORS } from './Constants';
 
 export default class ClaimModal extends Component {
     constructor(props) {
@@ -36,7 +36,7 @@ export default class ClaimModal extends Component {
                 {this.state.showSets && <CardGroup
                     clickCard={this.selectClaim.bind(this)}
                     suitClass='hhand-compact active-hand'
-                    cards={SET_INDICATORS.filter((s) => this.props.claims[s] == NEITHER)} />}
+                    cards={SET_INDICATORS.filter((s) => this.props.claims[s] == UNCLAIMED)} />}
                 {!this.state.showSets && <SetSelector
                     team={this.props.playerN % 2}
                     nPlayers={this.props.nPlayers}

@@ -98,7 +98,7 @@ export default class SetSelector extends Component {
             {selectors}
             {this.props.makeClaim
                 && <button
-                    className='ClaimButton'
+                    className='MakeClaimButton'
                     onClick={this.makeClaim.bind(this)}>Claim</button>}
         </div>
     }

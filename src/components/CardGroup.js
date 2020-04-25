@@ -1,8 +1,30 @@
 import React, { Component } from 'react';
 import Card from './Card';
-import { CARD_TO_NUMBER } from './Constants';
+import { CARD_TO_NUMBER, CLAIMED, SETS } from './Constants';
 
 export default class CardGroup extends Component {
+    constructor(props) {
+        super(props);
+        this.cards = this.filterCards(this.props.cards, this.props.claims);
+    }
+
+    filterCards(cards, claims) {
+        // Keep the cards that do not fall under claimed half suits.
+        return (cards || []).filter((c) => {
+            return Object.keys(claims || {}).filter((h) => {
+                if (claims[h] == CLAIMED) {
+                    if (c[1] == h[1] && SETS[h[0]].includes(c[0])) {
+                        return true;
+                    }
+                }
+            }).length == 0;
+        })
+    }
+
+    componentWillReceiveProps(nextProps) {
+        this.cards = this.filterCards(nextProps.cards, nextProps.claims);
+    }
+
     sortCard(a, b) {
         if (CARD_TO_NUMBER[a] > CARD_TO_NUMBER[b]) return 1;
         else if (CARD_TO_NUMBER[a] == CARD_TO_NUMBER[b]) return 0;
@@ -16,7 +38,7 @@ export default class CardGroup extends Component {
             'H': [],
             'S': []
         };
-        this.props.cards.forEach((c) => {
+        this.cards.forEach((c) => {
             const suit = c[c.length - 1];
             suited[suit].push(c);
         });

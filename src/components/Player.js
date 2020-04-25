@@ -8,6 +8,12 @@ export default class Players extends Component {
         let border = (this.props.turn == this.props.playerN) && {
             border: 'solid 3px white'
         } || {};
+        const playerInfo = { textAlign: 'center', color: '#c0c0c0' };
+        const cardsInfo = {
+            textAlign: 'center',
+            color: '#c0c0c0',
+            marginTop: '-10px'
+        };
         return <div
             className='Player'
             style={border}
@@ -15,11 +21,11 @@ export default class Players extends Component {
             <img
                 src={icons[this.props.playerN % 2]}
                 style={{ width: '100%' }} />
-            <p style={{ textAlign: 'center', color: '#c0c0c0' }}>
-                Player {this.props.playerN} {
-                    this.props.nCards && <p>{this.props.nCards} cards</p>
-                }
+            <p style={playerInfo}>
+                Player {this.props.playerN}
             </p>
-        </div>
+            {this.props.nCards &&
+                <p style={cardsInfo}>{this.props.nCards} cards</p>}
+        </div >
     }
 }
