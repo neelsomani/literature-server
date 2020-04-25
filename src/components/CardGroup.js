@@ -3,11 +3,6 @@ import Card from './Card';
 import { CARD_TO_NUMBER, CLAIMED, SETS } from './Constants';
 
 export default class CardGroup extends Component {
-    constructor(props) {
-        super(props);
-        this.cards = this.filterCards(this.props.cards, this.props.claims);
-    }
-
     filterCards(cards, claims) {
         // Keep the cards that do not fall under claimed half suits.
         return (cards || []).filter((c) => {
@@ -19,10 +14,6 @@ export default class CardGroup extends Component {
                 }
             }).length == 0;
         })
-    }
-
-    componentWillReceiveProps(nextProps) {
-        this.cards = this.filterCards(nextProps.cards, nextProps.claims);
     }
 
     sortCard(a, b) {
@@ -38,10 +29,11 @@ export default class CardGroup extends Component {
             'H': [],
             'S': []
         };
-        this.cards.forEach((c) => {
-            const suit = c[c.length - 1];
-            suited[suit].push(c);
-        });
+        this.filterCards(this.props.cards, this.props.claims)
+            .forEach((c) => {
+                const suit = c[c.length - 1];
+                suited[suit].push(c);
+            });
         for (let s in suited) {
             suited[s].sort(this.sortCard);
         }

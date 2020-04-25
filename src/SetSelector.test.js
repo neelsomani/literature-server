@@ -40,5 +40,5 @@ it('selects the correct cards by default', () => {
       correct={correct}
       makeClaim={makeClaim} />, container);
 
-  container.getElementsByClassName('ClaimButton')[0].click();
+  container.getElementsByClassName('MakeClaimButton')[0].click();
 })

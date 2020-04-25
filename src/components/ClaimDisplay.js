@@ -3,16 +3,20 @@ import React, { Component } from 'react';
 export default class ClaimDisplay extends Component {
     constructor(props) {
         super(props);
-        this.state = { show: true };
+        this.state = {
+            show: true,
+            lastHalfSuit: this.props.halfSuit
+        };
     }
 
-    componentWillReceiveProps(nextProps) {
-        if (nextProps.halfSuit != this.props.halfSuit) {
+    componentDidUpdate() {
+        if (this.props.halfSuit != this.state.lastHalfSuit) {
             const lastTimeout =
                 setTimeout(() => this.setState({ show: false }), 15 * 1000);
             clearTimeout(this.state.lastTimeout);
             this.setState({
                 show: true,
+                lastHalfSuit: this.props.halfSuit,
                 lastTimeout
             });
         }
