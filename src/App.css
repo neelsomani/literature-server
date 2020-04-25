@@ -72,3 +72,19 @@
   border-radius: 10px;
   padding: 1%;
 }
+
+.SetsDisplay {
+  position: absolute;
+  background-color: white;
+  bottom: 10%;
+  right: 4%;
+  padding: 10px;
+  border: 1px solid black;
+}
+
+.ClaimButton {
+  position: absolute;
+  bottom: 2%;
+  right: 2%;
+  font-size: large;
+}

@@ -7,6 +7,7 @@ import CardGroup from './components/CardGroup';
 import MakeMoveModal from './components/MakeMoveModal';
 import ClaimModal from './components/ClaimModal';
 import CorrectClaimModal from './components/CorrectClaimModal';
+import SetsDisplay from './components/SetsDisplay';
 import {
   SET_INDICATORS,
   EVEN,
@@ -30,7 +31,12 @@ class App extends Component {
       showClaimModal: false,
       showFullClaim: false,
       claims,
-      lastClaim: {}
+      lastClaim: {},
+      score: {
+        even: 0,
+        odd: 0,
+        discard: 0
+      }
     };
     const audioUrl = process.env.PUBLIC_URL + '/bell.mp3';
     this.bell = new Audio(audioUrl);
@@ -222,7 +228,11 @@ class App extends Component {
               (this.state.lastClaim.halfSuit || {}).suit}
             hideModal={() => { this.setState({ showFullClaim: false }) }}
           />}
-        <button onClick={() => this.setState({ showClaimModal: true })}>Make Claim</button>
+
+        <SetsDisplay score={this.state.score} />
+        {this.state.playerN != -1 && <button
+          className='ClaimButton'
+          onClick={() => this.setState({ showClaimModal: true })}>Make Claim</button>}
       </div>
     );
   }

@@ -3,23 +3,28 @@ import { SETS } from './Constants';
 
 export default class SetSelector extends Component {
     constructor(props) {
+        const {
+            set,
+            team,
+            correct,
+            nPlayers
+        } = props;
         super(props);
-        this.rankIndicator = this.props.set[0];
-        this.suitIndicator = this.props.set[1];
+        this.rankIndicator = set[0];
+        this.suitIndicator = set[1];
         const possessions = {};
-        [...Array(this.props.nPlayers).keys()]
-            .filter((p) => (this.props.team === undefined)
-                || p % 2 == this.props.team)
+        [...Array(nPlayers).keys()]
+            .filter((p) => (team === undefined) || p % 2 == team)
             .forEach((p) => {
                 possessions[p] = {};
                 SETS[this.rankIndicator].forEach(
                     (r) => possessions[p][r + this.suitIndicator] =
-                        this.props.correct[r + this.suitIndicator] == p);
+                        (correct || {})[r + this.suitIndicator] == p);
             });
         const disabled = {};
         SETS[this.rankIndicator].forEach(
             (r) => disabled[r + this.suitIndicator] =
-                (r + this.suitIndicator) in this.props.correct);
+                (r + this.suitIndicator) in (correct || {}));
         this.disabled = disabled;
         this.state = {
             possessions
@@ -60,35 +65,41 @@ export default class SetSelector extends Component {
         });
     }
 
+    radioButton(card, player) {
+        return <input
+            type='radio'
+            value={player}
+            name={'claim-' + card}
+            {...{ disabled: this.disabled[card] }}
+            {...{ checked: this.state.possessions[player][card] }}
+            onChange={() => this.handleOptionChange(card, player)} />
+    }
+
     render() {
         const selectors = (<table>
-            {SETS[this.rankIndicator].map((r) => (
-                <tr>
-                    <td>{r}{this.suitIndicator}:</td>
-                    {[...Array(this.props.nPlayers).keys()]
-                        .filter((p) => (this.props.team === undefined) ||
-                            (p % 2 == this.props.team))
-                        .map((p) => <td>
-                            <label><input
-                                type='radio'
-                                value={p}
-                                name={'claim-' + r + this.suitIndicator} {
-                                ...{ disabled: this.disabled[r + this.suitIndicator] }
-                                }
-                                {
-                                ...{ checked: this.state.possessions[p][r + this.suitIndicator] }
-                                }
-                                onChange={
-                                    () => this.handleOptionChange(r + this.suitIndicator, p)
-                                } />
+            <tbody>
+                {SETS[this.rankIndicator].map((r) => (
+                    <tr key={'card-selector-' + r + this.suitIndicator}>
+                        <td key={'label-' + r + this.suitIndicator}>
+                            {r}{this.suitIndicator}:</td>
+                        {[...Array(this.props.nPlayers).keys()]
+                            .filter((p) => (this.props.team === undefined) ||
+                                (p % 2 == this.props.team))
+                            .map((p) =>
+                                <td key={'indicator-' + r + this.suitIndicator + '-' + p}>
+                                    <label>{this.radioButton(r + this.suitIndicator, p)}
                             Player {p} </label>
-                        </td>)}
-                </tr>
-            ))}
+                                </td>)}
+                    </tr>
+                ))}
+            </tbody>
         </table>);
         return <div>
             {selectors}
-            {this.props.makeClaim && <button onClick={this.makeClaim.bind(this)}>Claim</button>}
+            {this.props.makeClaim
+                && <button
+                    className='ClaimButton'
+                    onClick={this.makeClaim.bind(this)}>Claim</button>}
         </div>
     }
 }
