@@ -25,10 +25,21 @@
   left: 50%;
   position: absolute;
   margin-left: -40%;
-  margin-top: -1em;
+  margin-top: -2em;
   font-size: 2em;
   text-align: center;
   color: #c0c0c0;
+}
+
+.ClaimDisplay {
+  width: 80%;
+  top: 50%;
+  left: 50%;
+  position: absolute;
+  margin-left: -40%;
+  font-size: 2em;
+  color: #c0c0c0;
+  text-align: center;
 }
 
 .Timer {
@@ -43,7 +54,7 @@
   padding-bottom: 2%;
 }
 
-.MakeMoveCover, .ClaimCover {
+.MakeMoveCover, .ClaimCover, .CorrectClaimCover {
   width: 100%;
   height: 100%;
   position: absolute;

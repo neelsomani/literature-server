@@ -9,6 +9,10 @@ export default class ClaimModal extends Component {
         this.state = {
             showSets: true,
         };
+        this.correct = {};
+        this.props.hand.forEach((c) => {
+            this.correct[c] = this.props.playerN;
+        });
     }
 
     selectClaim(card) {
@@ -34,9 +38,9 @@ export default class ClaimModal extends Component {
                     suitClass='hhand-compact active-hand'
                     cards={SET_INDICATORS.filter((s) => this.props.claims[s] == NEITHER)} />}
                 {!this.state.showSets && <SetSelector
-                    playerN={this.props.playerN}
+                    team={this.props.playerN % 2}
                     nPlayers={this.props.nPlayers}
-                    hand={this.props.hand}
+                    correct={this.correct}
                     makeClaim={this.props.makeClaim}
                     set={this.state.set} />}
             </div>

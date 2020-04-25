@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom';
 import App from './App';
 
 const PLAYER_KEY = '123';
+window.HTMLMediaElement.prototype.play = () => { };
 
 class MockSocketWrapper {
   socketClass() {

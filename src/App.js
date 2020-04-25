@@ -1,11 +1,20 @@
 import React, { Component } from 'react';
 import Players from './components/Players';
 import MoveDisplay from './components/MoveDisplay';
+import ClaimDisplay from './components/ClaimDisplay';
 import Timer from './components/Timer';
 import CardGroup from './components/CardGroup';
 import MakeMoveModal from './components/MakeMoveModal';
 import ClaimModal from './components/ClaimModal';
-import { SET_INDICATORS, EVEN, ODD, NEITHER, DISCARD } from './components/Constants';
+import CorrectClaimModal from './components/CorrectClaimModal';
+import {
+  SET_INDICATORS,
+  EVEN,
+  ODD,
+  NEITHER,
+  DISCARD,
+  SET_NAME_MAP
+} from './components/Constants';
 import './App.css';
 
 class App extends Component {
@@ -19,7 +28,9 @@ class App extends Component {
       nPlayers: 0,
       showMakeMoveModal: false,
       showClaimModal: false,
-      claims
+      showFullClaim: false,
+      claims,
+      lastClaim: {}
     };
     const audioUrl = process.env.PUBLIC_URL + '/bell.mp3';
     this.bell = new Audio(audioUrl);
@@ -175,6 +186,12 @@ class App extends Component {
           card={this.state.card}
           interrogator={this.state.interrogator}
           respondent={this.state.respondent} />
+        <ClaimDisplay
+          success={this.state.lastClaim.success}
+          claimBy={this.state.lastClaim.claimBy}
+          halfSuit={this.state.lastClaim.halfSuit}
+          showFullClaim={() => this.setState({ showFullClaim: true })}
+        />
         <Timer
           moveTimestamp={this.state.moveTimestamp}
           timeLimit={this.state.timeLimit}
@@ -197,6 +214,14 @@ class App extends Component {
           makeClaim={this.makeClaim.bind(this)}
           hideModal={this.hideClaimModal.bind(this)}
           makeClaim={this.makeClaim.bind(this)} />}
+        {this.state.showFullClaim &&
+          <CorrectClaimModal
+            nPlayers={this.state.nPlayers}
+            correct={this.state.lastClaim.truth}
+            set={SET_NAME_MAP[(this.state.lastClaim.halfSuit || {}).half] +
+              (this.state.lastClaim.halfSuit || {}).suit}
+            hideModal={() => { this.setState({ showFullClaim: false }) }}
+          />}
         <button onClick={() => this.setState({ showClaimModal: true })}>Make Claim</button>
       </div>
     );

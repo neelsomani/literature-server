@@ -9,7 +9,8 @@ export default class MakeMoveModal extends Component {
         this.state = {
             cards: []
         }
-        SETS.forEach((set) => {
+        Object.keys(SETS).forEach((k) => {
+            const set = SETS[k];
             SUITS.forEach((s) => {
                 let canAskHalf = false;
                 set.forEach((r) => {

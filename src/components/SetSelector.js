@@ -8,18 +8,18 @@ export default class SetSelector extends Component {
         this.suitIndicator = this.props.set[1];
         const possessions = {};
         [...Array(this.props.nPlayers).keys()]
-            .filter((p) => p % 2 == this.props.playerN % 2)
+            .filter((p) => (this.props.team === undefined)
+                || p % 2 == this.props.team)
             .forEach((p) => {
                 possessions[p] = {};
                 SETS[this.rankIndicator].forEach(
                     (r) => possessions[p][r + this.suitIndicator] =
-                        this.props.hand.includes(r + this.suitIndicator)
-                        && (p == this.props.playerN));
+                        this.props.correct[r + this.suitIndicator] == p);
             });
         const disabled = {};
         SETS[this.rankIndicator].forEach(
             (r) => disabled[r + this.suitIndicator] =
-                this.props.hand.includes(r + this.suitIndicator));
+                (r + this.suitIndicator) in this.props.correct);
         this.disabled = disabled;
         this.state = {
             possessions
@@ -66,7 +66,8 @@ export default class SetSelector extends Component {
                 <tr>
                     <td>{r}{this.suitIndicator}:</td>
                     {[...Array(this.props.nPlayers).keys()]
-                        .filter((p) => p % 2 == this.props.playerN % 2)
+                        .filter((p) => (this.props.team === undefined) ||
+                            (p % 2 == this.props.team))
                         .map((p) => <td>
                             <label><input
                                 type='radio'
@@ -87,7 +88,7 @@ export default class SetSelector extends Component {
         </table>);
         return <div>
             {selectors}
-            <button onClick={this.makeClaim.bind(this)}>Claim</button>
+            {this.props.makeClaim && <button onClick={this.makeClaim.bind(this)}>Claim</button>}
         </div>
     }
 }
