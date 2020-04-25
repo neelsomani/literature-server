@@ -15,6 +15,8 @@ class App extends Component {
       nPlayers: 0,
       showMakeMoveModal: false
     };
+    const audioUrl = process.env.PUBLIC_URL + '/bell.mp3';
+    this.bell = new Audio(audioUrl);
   }
 
   playCard(card) {
@@ -77,6 +79,8 @@ class App extends Component {
       respondent,
       interrogator
     } = payload;
+    if (turn == this.state.playerN && turn != this.state.turn)
+      this.bell.play();
     this.setState({
       nCards: n_cards,
       moveTimestamp: move_timestamp,
