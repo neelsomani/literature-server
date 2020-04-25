@@ -2,21 +2,38 @@ import React, { Component } from 'react';
 import Players from './components/Players';
 import MoveDisplay from './components/MoveDisplay';
 import Timer from './components/Timer';
-import VerticalCards from './components/VerticalCards';
+import CardGroup from './components/CardGroup';
 import MakeMoveModal from './components/MakeMoveModal';
+import ClaimModal from './components/ClaimModal';
+import { SET_INDICATORS, EVEN, ODD, NEITHER, DISCARD } from './components/Constants';
 import './App.css';
 
 class App extends Component {
   constructor(props) {
     super(props);
+    const claims = {};
+    SET_INDICATORS.forEach((s) => claims[s] = NEITHER);
     this.state = {
       uuid: '',
       hand: [],
       nPlayers: 0,
-      showMakeMoveModal: false
+      showMakeMoveModal: false,
+      showClaimModal: false,
+      claims
     };
     const audioUrl = process.env.PUBLIC_URL + '/bell.mp3';
     this.bell = new Audio(audioUrl);
+  }
+
+  makeClaim(possessions) {
+    this.hideClaimModal();
+    this.sendMessage({
+      action: 'claim',
+      payload: {
+        key: this.state.uuid,
+        possessions
+      }
+    })
   }
 
   playCard(card) {
@@ -24,6 +41,12 @@ class App extends Component {
     if (this.state.showMakeMoveModal && card) {
       this.makeMove(card, this.state.toBeRespondent);
     }
+  }
+
+  hideClaimModal() {
+    this.setState({
+      showClaimModal: false
+    });
   }
 
   hideMakeMoveModal() {
@@ -158,11 +181,23 @@ class App extends Component {
           switchTeam={() => this.sendMessage({ 'action': 'switch_team' })}
           turn={this.state.turn}
           playerN={this.state.playerN} />
-        <VerticalCards handClass='Player-hand' cards={this.state.hand} />
+        <CardGroup
+          handClass='Player-hand'
+          suitClass='vhand-compact'
+          cards={this.state.hand} />
         {this.state.showMakeMoveModal && <MakeMoveModal
           hand={this.state.hand}
           hideModal={this.hideMakeMoveModal.bind(this)}
           playCard={this.playCard.bind(this)} />}
+        {this.state.showClaimModal && <ClaimModal
+          playerN={this.state.playerN}
+          nPlayers={this.state.nPlayers}
+          hand={this.state.hand}
+          claims={this.state.claims}
+          makeClaim={this.makeClaim.bind(this)}
+          hideModal={this.hideClaimModal.bind(this)}
+          makeClaim={this.makeClaim.bind(this)} />}
+        <button onClick={() => this.setState({ showClaimModal: true })}>Make Claim</button>
       </div>
     );
   }

@@ -1,21 +1,16 @@
 import React, { Component } from 'react';
-import VerticalCards from './VerticalCards';
+import CardGroup from './CardGroup';
+import { SETS, SUITS } from './Constants';
 
 export default class MakeMoveModal extends Component {
-    sets = [
-        ['A', '2', '3', '4', '5', '6'],
-        ['8', '9', '10', 'J', 'Q', 'K']
-    ]
-    suits = ['C', 'D', 'H', 'S']
-
     constructor(props) {
         super(props);
         const hand = new Set(props.hand);
         this.state = {
             cards: []
         }
-        this.sets.forEach((set) => {
-            this.suits.forEach((s) => {
+        SETS.forEach((set) => {
+            SUITS.forEach((s) => {
                 let canAskHalf = false;
                 set.forEach((r) => {
                     if (hand.has(r + s)) canAskHalf = true;
@@ -41,9 +36,9 @@ export default class MakeMoveModal extends Component {
                 zIndex: 5
             }} onClick={this.props.hideModal}></div>
             <div className='CardSelector' style={{ zIndex: 10 }}>
-                <VerticalCards
-                    playCard={this.props.playCard}
-                    suitClass='active-hand'
+                <CardGroup
+                    clickCard={this.props.playCard}
+                    suitClass='vhand-compact active-hand'
                     cards={this.state.cards} />
             </div>
         </div>

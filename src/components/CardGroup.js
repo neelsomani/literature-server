@@ -1,25 +1,11 @@
 import React, { Component } from 'react';
 import Card from './Card';
+import { CARD_TO_NUMBER } from './Constants';
 
-export default class VerticalCards extends Component {
+export default class CardGroup extends Component {
     sortCard(a, b) {
-        const mapping = {
-            'A': 1,
-            '2': 2,
-            '3': 3,
-            '4': 4,
-            '5': 5,
-            '6': 6,
-            '7': 7,
-            '8': 8,
-            '9': 9,
-            '10': 10,
-            'J': 11,
-            'Q': 12,
-            'K': 13
-        }
-        if (mapping[a] > mapping[b]) return 1;
-        else if (mapping[a] == mapping[b]) return 0;
+        if (CARD_TO_NUMBER[a] > CARD_TO_NUMBER[b]) return 1;
+        else if (CARD_TO_NUMBER[a] == CARD_TO_NUMBER[b]) return 0;
         return -1;
     }
 
@@ -37,7 +23,7 @@ export default class VerticalCards extends Component {
         for (let s in suited) {
             suited[s].sort(this.sortCard);
         }
-        let suitClass = "hand vhand-compact"
+        let suitClass = "hand"
         if (this.props.suitClass) {
             suitClass += ' ' + this.props.suitClass;
         }
@@ -46,25 +32,25 @@ export default class VerticalCards extends Component {
                 <div className={suitClass}>
                     {suited['C'].map((c) => <Card
                         key={'card-' + c}
-                        playCard={this.props.playCard}
+                        clickCard={this.props.clickCard}
                         card={c} />)}
                 </div>
                 <div className={suitClass}>
                     {suited['D'].map((c) => <Card
                         key={'card-' + c}
-                        playCard={this.props.playCard}
+                        clickCard={this.props.clickCard}
                         card={c} />)}
                 </div>
                 <div className={suitClass}>
                     {suited['H'].map((c) => <Card
                         key={'card-' + c}
-                        playCard={this.props.playCard}
+                        clickCard={this.props.clickCard}
                         card={c} />)}
                 </div>
                 <div className={suitClass}>
                     {suited['S'].map((c) => <Card
                         key={'card-' + c}
-                        playCard={this.props.playCard}
+                        clickCard={this.props.clickCard}
                         card={c} />)}
                 </div>
             </div>
