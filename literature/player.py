@@ -100,6 +100,10 @@ class Player(Actor):
             self._memorize(Knowledge.that(self).has(card))
             self.suit_knowledge[self][card.half_suit()] += 1
 
+    def unclaimed_cards(self) -> int:
+        """ Return the number of unclaimed cards this Player has. """
+        return len([c for c in self.hand if c.half_suit() not in self.claims])
+
     def hand_to_dict(self) -> PrintableDict:
         """ Get a `PrintableDict` of this `Player`'s hand. """
         suits: Dict[Suit, List[Card.Name]] = {s: [] for s in Suit}

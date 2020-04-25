@@ -112,7 +112,7 @@ export default class Card extends Component {
     render() {
         return <img
             className='card'
-            onClick={() => { this.props.playCard && this.props.playCard(this.props.card) }}
+            onClick={() => { this.props.clickCard && this.props.clickCard(this.props.card) }}
             src={this.cardMap[this.props.card]} />
     }
 }
