@@ -6,39 +6,38 @@ import DiscardIcon from './no.png';
 
 export default class ScoreDisplay extends Component {
     render() {
+        const scores = [
+            {
+                icon: PlayerEvenIcon,
+                score: this.props.score.even,
+                className: 'EvenScore'
+            },
+            {
+                icon: PlayerOddIcon,
+                score: this.props.score.odd,
+                className: 'OddScore'
+            },
+            {
+                icon: DiscardIcon,
+                score: this.props.score.discard,
+                className: 'DiscardScore'
+            }
+        ]
         return <div className='ScoreDisplay'>
             <table>
                 <tbody>
-                    <tr>
-                        <td>
-                            <img
-                                src={PlayerEvenIcon}
-                                height={15}
-                                width={15} />
-                        </td>
-                        <td className='EvenScore'>
-                            {this.props.score.even}</td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <img
-                                src={PlayerOddIcon}
-                                height={15}
-                                width={15} />
-                        </td>
-                        <td className='OddScore'>
-                            {this.props.score.odd}</td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <img
-                                src={DiscardIcon}
-                                height={15}
-                                width={15} />
-                        </td>
-                        <td className='DiscardScore'>
-                            {this.props.score.discard}</td>
-                    </tr>
+                    {scores.map((s) =>
+                        <tr key={s.className + '-container'}>
+                            <td>
+                                <img
+                                    src={s.icon}
+                                    height={15}
+                                    width={15} />
+                            </td>
+                            <td className={s.className}>
+                                {s.score}</td>
+                        </tr>
+                    )}
                 </tbody>
             </table>
         </div>
