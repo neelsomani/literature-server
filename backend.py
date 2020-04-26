@@ -6,8 +6,10 @@ import gevent
 import literature
 
 from constants import *
+from util import schedule
 
 VISITOR_PLAYER_ID = -1
+BOT_SECOND_DELAY = 5
 
 
 class RoomManager:
@@ -60,6 +62,7 @@ class RoomManager:
         if game_uuid in self.games:
             if player_uuid in self.games[game_uuid].users:
                 # Connect as this player to the game.
+                logger.info('Player {} has reconnected'.format(player_uuid))
                 player = self.games[game_uuid].users[player_uuid]
                 player.connected = True
                 player.socket = client
@@ -192,7 +195,6 @@ class LiteratureAPI:
                     self.users[player_uuid].connected = False
                     self.logger.info('Player {} is disconnected from game {}'
                                      .format(player_uuid, self.uuid))
-            # TODO(@neel): Replace disconnected player with bot.
 
     def _send_all(self, message):
         """ Send a message to all clients. """
@@ -214,13 +216,87 @@ class LiteratureAPI:
             return
         fn(message.get('payload', {}))
 
+    def _move_if_possible(self, user, use_all_knowledge):
+        """
+        Optionally return a valid Move for this User.
+
+        If `use_all_knowledge` is True, then only return moves that could
+        possibly be successful.
+        """
+        player = self.game.players[user.player_n]
+        for p in self.game.players:
+            for r in literature.SETS[literature.Half.MINOR] \
+                     | literature.SETS[literature.Half.MAJOR]:
+                for s in literature.Suit:
+                    if player.valid_ask(p,
+                                        literature.Card.Name(r, s),
+                                        use_all_knowledge):
+                        return player.asks(p).to_give(
+                            literature.Card.Name(r, s)
+                        )
+
+    def execute_bot_moves(self):
+        """
+        Make claims on behalf of bots. Make a move if the current turn
+        is a bot's.
+
+        Stop once the first claim or move is made.
+        """
+        for player_uuid, p in self.users.items():
+            if p.connected:
+                continue
+            claims = self.game.players[p.player_n].evaluate_claims()
+            new_claims = {
+                h: c for h, c in claims.items()
+                if self.game.claims[c] == literature.Team.NEITHER
+            }
+            if len(new_claims) == 0:
+                continue
+            self.logger.info('Making claim on behalf of bot {}'
+                             .format(player_uuid))
+            _random_claim = list(new_claims.keys())[0]
+            self.handle_message({
+                'action': CLAIM,
+                'payload': {
+                    'key': player_uuid,
+                    'possessions': {
+                        c.serialize(): p.unique_id
+                        for c, p in new_claims[_random_claim]
+                    }
+                }
+            })
+            return
+
+        bot_uuid = None
+        for player_uuid in self.users:
+            if self.users[player_uuid] == self.game.turn.unique_id:
+                bot_uuid = player_uuid
+                break
+        if not bot_uuid:
+            return
+
+        bot = self.users[bot_uuid]
+        if not bot.connected:
+            move = self._move_if_possible(user=bot, use_all_knowledge=True)
+            if not move:
+                move = self._move_if_possible(user=bot,
+                                              use_all_knowledge=False)
+            self.handle_message({
+                'action': MOVE,
+                'payload': {
+                    'key': bot_uuid,
+                    'respondent': move.respondent,
+                    'card': move.card.serialize()
+                }
+            })
+
     def _claim(self, payload):
         """
         Evaluate whether a player's claim is valid.
         Send the whether the player was correct in addition
         to the correct pairings to all players.
 
-        The included fields are:
+        The included fields of the response are:
         - `claim_by`
         - `half_suit`
         - `turn`
@@ -274,6 +350,7 @@ class LiteratureAPI:
             })
         })
         self._send_hands()
+        schedule(BOT_SECOND_DELAY, self.execute_bot_moves, repeat=False)
 
     def _move(self, payload):
         """
@@ -340,7 +417,7 @@ class LiteratureAPI:
         Send the last move, the current player's turn, and each player's number
         of cards to all players.
 
-        The included fields are:
+        The included fields of the response are:
         - `interrogator`
         - `respondent`
         - `card`
@@ -360,6 +437,7 @@ class LiteratureAPI:
                     'turn': self.game.turn.unique_id
                 })
             })
+            schedule(BOT_SECOND_DELAY, self.execute_bot_moves, repeat=False)
             return
 
         last_move, move_success = (
@@ -376,6 +454,7 @@ class LiteratureAPI:
                 'success': move_success
             })
         })
+        schedule(BOT_SECOND_DELAY, self.execute_bot_moves, repeat=False)
 
     def _send_hands(self):
         """
