@@ -52,6 +52,13 @@ class CreateRoom extends Component {
                         <button>Go</button>
                     </form>
                 </div>
+                <div className='Footer'>
+                    Bring your own chat //{' '}
+                    <a
+                        style={{ color: '#10104a' }}
+                        href="https://github.com/neelsomani/literature-server">GitHub Repo</a>
+                    {' '}// MIT License
+                </div>
             </div>
         );
     }
