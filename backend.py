@@ -10,7 +10,6 @@ from constants import *
 import util
 
 VISITOR_PLAYER_ID = -1
-BOT_SECOND_DELAY = 10
 
 
 class RoomManager:
@@ -91,11 +90,26 @@ class RoomManager:
 
 
 class User:
+    MAX_USERNAME_LENGTH = 20
+
     def __init__(self, socket, player_n, connected, username):
         self.socket = socket
         self.player_n = player_n
         self.connected = connected
         self.username = username
+
+    @property
+    def username(self):
+        if not self.connected:
+            return 'Bot {}'.format(self.player_n)
+        return self._username
+
+    @username.setter
+    def username(self, u):
+        if not u or u.strip() == '':
+            self._username = 'Player {}'.format(self.player_n)
+        else:
+            self._username = u[:User.MAX_USERNAME_LENGTH]
 
 
 class LiteratureAPI:
@@ -103,6 +117,7 @@ class LiteratureAPI:
     Interface for registering and updating WebSocket clients
     for a given game.
     """
+    BOT_SECOND_DELAY = 10
 
     def __init__(self,
                  game_uuid,
@@ -145,8 +160,6 @@ class LiteratureAPI:
             player_n = VISITOR_PLAYER_ID
         else:
             player_n = self.current_players
-        if not username:
-            username = 'Player {}'.format(player_n)
 
         self.current_players += 1
         player_uuid = _uuid(self.users)
@@ -203,7 +216,6 @@ class LiteratureAPI:
                     u.connected = False
                     self.logger.info('Player {} is disconnected from game {}'
                                      .format(player_uuid, self.uuid))
-                    u.username = 'Bot {}'.format(u.player_n)
                     self._send_player_names()
 
     def _send_all(self, message, exclude_bots=False):
@@ -250,7 +262,7 @@ class LiteratureAPI:
 
     def _move_if_possible(self, user, use_all_knowledge):
         """
-        Optionally return a valid Move for this User.
+        Return a list of valid Moves for this User.
 
         If `use_all_knowledge` is True, then only return moves that could
         possibly be successful.
@@ -384,7 +396,7 @@ class LiteratureAPI:
         })
         self._send_hands()
         self.stop_bots()
-        self.stop_bots = util.schedule(BOT_SECOND_DELAY,
+        self.stop_bots = util.schedule(LiteratureAPI.BOT_SECOND_DELAY,
                                        self.execute_bot_moves)
 
     def _move(self, payload):
@@ -481,7 +493,7 @@ class LiteratureAPI:
                 })
             })
             self.stop_bots()
-            self.stop_bots = util.schedule(BOT_SECOND_DELAY,
+            self.stop_bots = util.schedule(LiteratureAPI.BOT_SECOND_DELAY,
                                            self.execute_bot_moves)
             return
 
@@ -500,7 +512,7 @@ class LiteratureAPI:
             })
         })
         self.stop_bots()
-        self.stop_bots = util.schedule(BOT_SECOND_DELAY,
+        self.stop_bots = util.schedule(LiteratureAPI.BOT_SECOND_DELAY,
                                        self.execute_bot_moves)
 
     def _send_hands(self):

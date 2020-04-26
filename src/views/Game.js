@@ -119,7 +119,7 @@ class Game extends Component {
       time_limit,
       game_uuid
     } = payload;
-    // TODO(@neel): Store uuid when received.
+    localStorage.setItem(PLAYER_UUID, player_uuid);
     this.setState({
       uuid: player_uuid,
       playerN: player_n,

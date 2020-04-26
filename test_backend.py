@@ -14,7 +14,12 @@ from literature import (
     Suit
 )
 
-from backend import LiteratureAPI, RoomManager, VISITOR_PLAYER_ID
+from backend import (
+    LiteratureAPI,
+    RoomManager,
+    User,
+    VISITOR_PLAYER_ID
+)
 from constants import *
 import util
 
@@ -339,3 +344,15 @@ def test_start_game(api):
         }
     })
     assert api.current_players == 4
+
+
+def test_user_object():
+    no_name = User(MockClient(), 1, True, '')
+    assert no_name.username == 'Player 1'
+    real_name = User(MockClient(), 2, True, MOCK_NAME)
+    assert real_name.username == MOCK_NAME
+    real_name.connected = False
+    assert real_name.username == 'Bot 2'
+    long_string = 'a' * 30
+    real_name.username = long_string
+    assert len(real_name.username) <= 20
