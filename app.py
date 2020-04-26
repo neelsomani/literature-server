@@ -6,16 +6,16 @@ from flask_sockets import Sockets
 import gevent
 
 from backend import RoomManager
-from util import schedule
+import util
 
 app = Flask(__name__, static_folder='build/', static_url_path='/')
 app.debug = 'DEBUG' in os.environ
 
 sockets = Sockets(app)
 room_manager = RoomManager(app.logger)
-schedule(RoomManager.DELETE_ROOMS_AFTER_MIN * 60,
-         room_manager.delete_unused_rooms,
-         repeat=True)
+util.schedule(RoomManager.DELETE_ROOMS_AFTER_MIN * 60,
+              room_manager.delete_unused_rooms,
+              repeat=True)
 
 
 @app.route('/')

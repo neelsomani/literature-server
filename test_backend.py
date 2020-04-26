@@ -16,6 +16,7 @@ from literature import (
 
 from backend import LiteratureAPI, RoomManager, VISITOR_PLAYER_ID
 from constants import *
+import util
 
 MOCK_UNIQUE_ID = '1'
 MISSING_CARD = Card.Name(3, Suit.CLUBS)
@@ -54,16 +55,17 @@ def mock_get_game(n_players):
                       turn_picker=lambda: 0)
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture()
 def setup_mocking(monkeypatch):
     # gevent does not execute for tests
     monkeypatch.setattr(gevent, 'spawn', sync_exec)
     monkeypatch.setattr(time, 'time', lambda: 0)
     monkeypatch.setattr(literature, 'get_game', mock_get_game)
+    monkeypatch.setattr(util, 'schedule', lambda i, f, repeat=False: None)
 
 
 @pytest.fixture()
-def api(monkeypatch):
+def api(monkeypatch, setup_mocking):
     # Pick the first player to start
     return LiteratureAPI(
         game_uuid=MOCK_UNIQUE_ID,
@@ -238,11 +240,10 @@ def test_game_complete(monkeypatch, initialized_room):
     assert msg['action'] == COMPLETE
 
 
-def test_rooms(monkeypatch):
-    rm = RoomManager()
+def test_rooms(monkeypatch, setup_mocking):
+    rm = RoomManager(logging.getLogger(__name__))
     new_room_client = MockClient()
     rm.join_game(new_room_client,
-                 logging.getLogger(__name__),
                  player_uuid=None,
                  game_uuid=None,
                  n_players=N_PLAYERS)
@@ -252,7 +253,6 @@ def test_rooms(monkeypatch):
     game_uuid = msg['game_uuid']
     player_uuid = msg['player_uuid']
     rm.join_game(same_room_client,
-                 logging.getLogger(__name__),
                  player_uuid=None,
                  game_uuid=game_uuid,
                  n_players=None)
@@ -262,7 +262,6 @@ def test_rooms(monkeypatch):
         msg['player_uuid'] != player_uuid
     player_reconnected = MockClient()
     rm.join_game(player_reconnected,
-                 logging.getLogger(__name__),
                  player_uuid=player_uuid,
                  game_uuid=game_uuid,
                  n_players=None)
@@ -272,11 +271,10 @@ def test_rooms(monkeypatch):
         msg['player_uuid'] == player_uuid
 
 
-def test_room_deletion(monkeypatch):
-    rm = RoomManager()
+def test_room_deletion(monkeypatch, setup_mocking):
+    rm = RoomManager(logging.getLogger(__name__))
     new_room_client = MockClient()
     rm.join_game(new_room_client,
-                 logging.getLogger(__name__),
                  player_uuid=None,
                  game_uuid=None,
                  n_players=N_PLAYERS)
@@ -288,3 +286,29 @@ def test_room_deletion(monkeypatch):
     monkeypatch.setattr(time, 'time', lambda: 15 * 60)
     rm.delete_unused_rooms()
     assert len(rm.games) == 0
+
+
+def _broken_send(_):
+    raise AssertionError('closed')
+
+
+def test_bot_moves(monkeypatch, initialized_room):
+    api, clients = initialized_room['api'], initialized_room['clients']
+    assert len(api.game.actual_possessions) == 0
+    # Turn player 0 into a bot by breaking the WebSocket
+    for c in clients:
+        if c.messages[0]['payload']['player_n'] == 0:
+            c.send = _broken_send
+    p0_key = _get_p0_key(clients)
+    api.handle_message({
+        'action': MOVE,
+        'payload': {
+            'key': p0_key,
+            'respondent': 1,
+            'card': MISSING_CARD.serialize()
+        }
+    })
+    api.execute_bot_moves()
+    assert len(api.game.actual_possessions) == 1
+    api.execute_bot_moves()
+    assert len(api.game.actual_possessions) == 2

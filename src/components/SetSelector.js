@@ -70,6 +70,7 @@ export default class SetSelector extends Component {
             type='radio'
             value={player}
             name={'claim-' + card}
+            className={'claim-' + card}
             {...{ disabled: this.disabled[card] }}
             {...{ checked: this.state.possessions[player][card] }}
             onChange={() => this.handleOptionChange(card, player)} />

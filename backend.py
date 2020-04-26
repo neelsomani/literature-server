@@ -7,7 +7,7 @@ import gevent
 import literature
 
 from constants import *
-from util import schedule
+import util
 
 VISITOR_PLAYER_ID = -1
 BOT_SECOND_DELAY = 10
@@ -236,7 +236,8 @@ class LiteratureAPI:
                                     literature.Card.Name(r, s),
                                     use_all_knowledge)
             ])
-        return moves[int(random.random() * len(moves))]
+        if len(moves) != 0:
+            return moves[int(random.random() * len(moves))]
 
     def execute_bot_moves(self):
         """
@@ -265,7 +266,7 @@ class LiteratureAPI:
                     'key': player_uuid,
                     'possessions': {
                         c.serialize(): p.unique_id
-                        for c, p in new_claims[_random_claim]
+                        for c, p in new_claims[_random_claim].items()
                     }
                 }
             })
@@ -357,8 +358,8 @@ class LiteratureAPI:
             })
         })
         self._send_hands()
-        schedule(BOT_SECOND_DELAY,
-                 self.execute_bot_moves)
+        util.schedule(BOT_SECOND_DELAY,
+                      self.execute_bot_moves)
 
     def _move(self, payload):
         """
@@ -445,8 +446,8 @@ class LiteratureAPI:
                     'turn': self.game.turn.unique_id
                 })
             })
-            schedule(BOT_SECOND_DELAY,
-                     self.execute_bot_moves)
+            util.schedule(BOT_SECOND_DELAY,
+                          self.execute_bot_moves)
             return
 
         last_move, move_success = (
@@ -463,8 +464,8 @@ class LiteratureAPI:
                 'success': move_success
             })
         })
-        schedule(BOT_SECOND_DELAY,
-                 self.execute_bot_moves)
+        util.schedule(BOT_SECOND_DELAY,
+                      self.execute_bot_moves)
 
     def _send_hands(self):
         """
