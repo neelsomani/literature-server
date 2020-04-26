@@ -20,3 +20,6 @@ python3, npm, Heroku CLI
 2. `heroku local`
 
 The application will be running at http://localhost:5000.
+
+## Architecture
+![Literature server architecture](https://i.imgur.com/mCSgZ1I.jpg)
