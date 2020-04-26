@@ -1,5 +1,9 @@
 # literature-server
+![Travis CI](https://travis-ci.org/neelsomani/literature-server.svg?branch=master)
+
 A server to play the card game Literature: https://en.wikipedia.org/wiki/Literature_(card_game)
+
+Literature card game engine: https://github.com/neelsomani/literature
 
 ## Dependencies
 
@@ -16,3 +20,6 @@ python3, npm, Heroku CLI
 2. `heroku local`
 
 The application will be running at http://localhost:5000.
+
+## Architecture
+![Literature server architecture](https://i.imgur.com/QwAif2T.jpg)
