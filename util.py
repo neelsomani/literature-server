@@ -2,13 +2,13 @@
 from threading import Event, Thread
 
 
-def schedule(interval, func, repeat):
+def schedule(interval, func, repeat=False):
     stopped = Event()
 
     def loop():
         while not stopped.wait(interval):
             func()
             if not repeat:
-                break
+                stopped.set()
     Thread(target=loop).start()
     return stopped.set

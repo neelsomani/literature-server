@@ -46,6 +46,7 @@ class Game extends Component {
     this.hideClaimModal();
     this.sendMessage({
       action: 'claim',
+      game_uuid: this.state.gameUuid,
       payload: {
         key: this.state.uuid,
         possessions
@@ -85,6 +86,7 @@ class Game extends Component {
   makeMove(card, toBeRespondent) {
     this.sendMessage({
       action: 'move',
+      game_uuid: this.state.gameUuid,
       payload: {
         key: this.state.uuid,
         respondent: toBeRespondent,
@@ -254,7 +256,10 @@ class Game extends Component {
         <Timer
           moveTimestamp={this.state.moveTimestamp}
           timeLimit={this.state.timeLimit}
-          switchTeam={() => this.sendMessage({ 'action': 'switch_team' })}
+          switchTeam={() => this.sendMessage({
+            action: 'switch_team',
+            game_uuid: this.state.gameUuid
+          })}
           turn={this.state.turn}
           gameUuid={this.state.gameUuid}
           playerN={this.state.playerN} />

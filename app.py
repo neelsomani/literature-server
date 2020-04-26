@@ -12,7 +12,7 @@ app = Flask(__name__, static_folder='build/', static_url_path='/')
 app.debug = 'DEBUG' in os.environ
 
 sockets = Sockets(app)
-room_manager = RoomManager()
+room_manager = RoomManager(app.logger)
 schedule(RoomManager.DELETE_ROOMS_AFTER_MIN * 60,
          room_manager.delete_unused_rooms,
          repeat=True)
@@ -52,7 +52,7 @@ def submit(ws):
             continue
 
         app.logger.info('Handling message: {}'.format(msg))
-        room_manager.handle_message(user_msg, app.logger)
+        room_manager.handle_message(user_msg)
 
 
 @sockets.route('/receive')
@@ -64,7 +64,6 @@ def receive(ws):
         request.args.get('n_players')
     )
     room_manager.join_game(client=ws,
-                           logger=app.logger,
                            player_uuid=player_uuid,
                            game_uuid=game_uuid,
                            n_players=n_players)

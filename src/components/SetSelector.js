@@ -51,9 +51,9 @@ export default class SetSelector extends Component {
             const cardDict = this.state.possessions[p];
             possessions[p] = {};
             Object.keys(cardDict).forEach((c) => {
-                if (c === card && p !== player) {
+                if (c === card && parseInt(p) !== player) {
                     possessions[p][c] = false;
-                } else if (c === card && p === player) {
+                } else if (c === card && parseInt(p) === player) {
                     possessions[p][c] = true;
                 } else {
                     possessions[p][c] = cardDict[c];

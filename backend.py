@@ -1,4 +1,5 @@
 import json
+import random
 import time
 import uuid
 
@@ -9,7 +10,7 @@ from constants import *
 from util import schedule
 
 VISITOR_PLAYER_ID = -1
-BOT_SECOND_DELAY = 5
+BOT_SECOND_DELAY = 10
 
 
 class RoomManager:
@@ -17,15 +18,14 @@ class RoomManager:
     DEFAULT_N_PLAYERS = 4
     DELETE_ROOMS_AFTER_MIN = 10
 
-    def __init__(self):
+    def __init__(self, logger):
         self.games = {}
+        self.logger = logger
 
-    def handle_message(self, message, logger):
+    def handle_message(self, message):
         game = self.games.get(message['game_uuid'])
         if game is None:
-            logger.exception(
-                'Invalid game_uuid: {}'.format(json.dumps(message))
-            )
+            self.logger.info('Invalid game_uuid: {}'.format(message))
             return
         game.handle_message(message)
 
@@ -41,7 +41,6 @@ class RoomManager:
 
     def join_game(self,
                   client,
-                  logger,
                   player_uuid=None,
                   game_uuid=None,
                   n_players=DEFAULT_N_PLAYERS):
@@ -58,11 +57,11 @@ class RoomManager:
         2. Attempt connecting to `game_uuid` as any player.
         3. Create new game with `n_players`.
         """
-
         if game_uuid in self.games:
             if player_uuid in self.games[game_uuid].users:
                 # Connect as this player to the game.
-                logger.info('Player {} has reconnected'.format(player_uuid))
+                self.logger.info(
+                    'Player {} has reconnected'.format(player_uuid))
                 player = self.games[game_uuid].users[player_uuid]
                 player.connected = True
                 player.socket = client
@@ -71,10 +70,10 @@ class RoomManager:
                 self.games[game_uuid].register_new_player(client)
             return
 
-        n_players = RoomManager._parse_n_players(n_players, logger)
+        n_players = RoomManager._parse_n_players(n_players, self.logger)
         game_uuid = _uuid(self.games)
         self.games[game_uuid] = LiteratureAPI(game_uuid=game_uuid,
-                                              logger=logger,
+                                              logger=self.logger,
                                               n_players=n_players,
                                               time_limit=60)
         self.games[game_uuid].register_new_player(client)
@@ -126,11 +125,12 @@ class LiteratureAPI:
         self.current_players = 0
         # `last_executed_move` is the timestamp of the last executed move,
         # used to determine if this game is inactive.
-        self.last_executed_move = 0
+        current_time = time.time()
+        self.last_executed_move = current_time
         # `move_timestamp` gives the base time for the current time limit,
         # which might be later than the `last_executed_move` if the turn is
         # forcibly switched.
-        self.move_timestamp = 0
+        self.move_timestamp = current_time
         self.time_limit = time_limit
         self.logger.info('Initialized game {}'.format(game_uuid))
 
@@ -211,7 +211,7 @@ class LiteratureAPI:
         if fn is None:
             self.logger.exception(
                 'Received bad action for message: {}'
-                .format(json.dumps(message))
+                .format(message)
             )
             return
         fn(message.get('payload', {}))
@@ -224,23 +224,27 @@ class LiteratureAPI:
         possibly be successful.
         """
         player = self.game.players[user.player_n]
+        moves = []
         for p in self.game.players:
-            for r in literature.SETS[literature.Half.MINOR] \
-                     | literature.SETS[literature.Half.MAJOR]:
-                for s in literature.Suit:
-                    if player.valid_ask(p,
-                                        literature.Card.Name(r, s),
-                                        use_all_knowledge):
-                        return player.asks(p).to_give(
-                            literature.Card.Name(r, s)
-                        )
+            moves.extend([
+                player.asks(p).to_give(
+                    literature.Card.Name(r, s)
+                )
+                for r in literature.MINOR | literature.MAJOR
+                for s in literature.Suit
+                if player.valid_ask(p,
+                                    literature.Card.Name(r, s),
+                                    use_all_knowledge)
+            ])
+        return moves[int(random.random() * len(moves))]
 
     def execute_bot_moves(self):
         """
         Make claims on behalf of bots. Make a move if the current turn
         is a bot's.
 
-        Stop once the first claim or move is made.
+        Stop once the first claim or move is made. The function should be
+        called with a delay so the users have time to read the moves.
         """
         for player_uuid, p in self.users.items():
             if p.connected:
@@ -248,7 +252,7 @@ class LiteratureAPI:
             claims = self.game.players[p.player_n].evaluate_claims()
             new_claims = {
                 h: c for h, c in claims.items()
-                if self.game.claims[c] == literature.Team.NEITHER
+                if self.game.claims[h] == literature.Team.NEITHER
             }
             if len(new_claims) == 0:
                 continue
@@ -266,17 +270,20 @@ class LiteratureAPI:
                 }
             })
             return
+        self.logger.info('Bots for game {} found no claims this turn'
+                         .format(self.uuid))
 
-        bot_uuid = None
+        current_uuid = None
         for player_uuid in self.users:
-            if self.users[player_uuid] == self.game.turn.unique_id:
-                bot_uuid = player_uuid
+            if self.users[player_uuid].player_n == self.game.turn.unique_id:
+                current_uuid = player_uuid
                 break
-        if not bot_uuid:
+        if not current_uuid:
             return
 
-        bot = self.users[bot_uuid]
+        bot = self.users[current_uuid]
         if not bot.connected:
+            self.logger.info('Executing move for bot {}'.format(current_uuid))
             move = self._move_if_possible(user=bot, use_all_knowledge=True)
             if not move:
                 move = self._move_if_possible(user=bot,
@@ -284,8 +291,8 @@ class LiteratureAPI:
             self.handle_message({
                 'action': MOVE,
                 'payload': {
-                    'key': bot_uuid,
-                    'respondent': move.respondent,
+                    'key': current_uuid,
+                    'respondent': move.respondent.unique_id,
                     'card': move.card.serialize()
                 }
             })
@@ -350,7 +357,8 @@ class LiteratureAPI:
             })
         })
         self._send_hands()
-        schedule(BOT_SECOND_DELAY, self.execute_bot_moves, repeat=False)
+        schedule(BOT_SECOND_DELAY,
+                 self.execute_bot_moves)
 
     def _move(self, payload):
         """
@@ -437,7 +445,8 @@ class LiteratureAPI:
                     'turn': self.game.turn.unique_id
                 })
             })
-            schedule(BOT_SECOND_DELAY, self.execute_bot_moves, repeat=False)
+            schedule(BOT_SECOND_DELAY,
+                     self.execute_bot_moves)
             return
 
         last_move, move_success = (
@@ -454,7 +463,8 @@ class LiteratureAPI:
                 'success': move_success
             })
         })
-        schedule(BOT_SECOND_DELAY, self.execute_bot_moves, repeat=False)
+        schedule(BOT_SECOND_DELAY,
+                 self.execute_bot_moves)
 
     def _send_hands(self):
         """
