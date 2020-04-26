@@ -22,6 +22,8 @@ class Game extends Component {
     super(props);
     const claims = {};
     SET_INDICATORS.forEach((s) => claims[s] = UNCLAIMED);
+    const playerNames = {};
+    [...Array(8).keys()].forEach((p) => playerNames[p] = 'Player ' + p);
     this.state = {
       uuid: '',
       gameUuid: '',
@@ -36,7 +38,8 @@ class Game extends Component {
         even: 0,
         odd: 0,
         discard: 0
-      }
+      },
+      playerNames
     };
     const audioUrl = process.env.PUBLIC_URL + '/bell.mp3';
     this.bell = new Audio(audioUrl);
@@ -153,7 +156,10 @@ class Game extends Component {
       card,
       respondent,
       interrogator,
-      score
+      score: {
+        ...this.state.score,
+        ...score
+      }
     })
     if (turn !== this.state.playerN) this.hideMakeMoveModal();
   }
@@ -177,7 +183,10 @@ class Game extends Component {
       nCards: n_cards,
       moveTimestamp: move_timestamp,
       turn,
-      score,
+      score: {
+        ...this.state.score,
+        ...score
+      },
       claims,
       lastClaim: {
         claimBy: claim_by,
@@ -187,6 +196,10 @@ class Game extends Component {
       }
     })
     if (turn !== this.state.playerN) this.hideMakeMoveModal();
+  }
+
+  playerNames({ playerNames }) {
+    this.setState({ playerNames });
   }
 
   handleMessage(message) {
@@ -206,6 +219,9 @@ class Game extends Component {
         break;
       case 'claim':
         this.claim(data.payload)
+        break;
+      case 'player_names':
+        this.playerNames(data.payload)
         break;
       default:
         throw new Error('Unhandled action: ' + data.action);
@@ -251,17 +267,20 @@ class Game extends Component {
         <Players
           nPlayers={this.state.nPlayers}
           playerN={this.state.playerN}
+          playerNames={this.state.playerNames}
           nCards={this.state.nCards}
           turn={this.state.turn}
           showModal={this.showMakeMoveModal.bind(this)} />
         <MoveDisplay
           success={this.state.success}
           card={this.state.card}
+          playerNames={this.state.playerNames}
           interrogator={this.state.interrogator}
           respondent={this.state.respondent} />
         <ClaimDisplay
           success={this.state.lastClaim.success}
           claimBy={this.state.lastClaim.claimBy}
+          playerNames={this.state.playerNames}
           halfSuit={this.state.lastClaim.halfSuit}
           showFullClaim={() => this.setState({ showFullClaim: true })}
         />
@@ -288,6 +307,7 @@ class Game extends Component {
         {this.state.showClaimModal && <ClaimModal
           playerN={this.state.playerN}
           nPlayers={this.state.nPlayers}
+          playerNames={this.state.playerNames}
           hand={this.state.hand}
           claims={this.state.claims}
           hideModal={this.hideClaimModal.bind(this)}
@@ -296,6 +316,7 @@ class Game extends Component {
           <CorrectClaimModal
             nPlayers={this.state.nPlayers}
             correct={this.state.lastClaim.truth}
+            playerNames={this.state.playerNames}
             set={SET_NAME_MAP[(this.state.lastClaim.halfSuit || {}).half] +
               (this.state.lastClaim.halfSuit || {}).suit}
             hideModal={() => { this.setState({ showFullClaim: false }) }}

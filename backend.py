@@ -141,11 +141,9 @@ class LiteratureAPI:
 
     def register_new_player(self, client, username):
         """ Register a new user for this game. """
-        connected = False
         if self.current_players >= self.n_players:
             player_n = VISITOR_PLAYER_ID
         else:
-            connected = True
             player_n = self.current_players
         if not username:
             username = 'Player {}'.format(player_n)
@@ -154,7 +152,7 @@ class LiteratureAPI:
         player_uuid = _uuid(self.users)
         self.users[player_uuid] = User(socket=client,
                                        player_n=player_n,
-                                       connected=connected,
+                                       connected=True,
                                        username=username)
         self.register_with_uuid(player_uuid)
 
@@ -201,13 +199,18 @@ class LiteratureAPI:
         except:
             for player_uuid in self.users:
                 if self.users[player_uuid].socket == client:
-                    self.users[player_uuid].connected = False
+                    u = self.users[player_uuid]
+                    u.connected = False
                     self.logger.info('Player {} is disconnected from game {}'
                                      .format(player_uuid, self.uuid))
+                    u.username = 'Bot {}'.format(u.player_n)
+                    self._send_player_names()
 
-    def _send_all(self, message):
+    def _send_all(self, message, exclude_bots=False):
         """ Send a message to all clients. """
         for user in self.users.values():
+            if exclude_bots and not user.connected:
+                continue
             gevent.spawn(self._send, user.socket, message)
 
     def _send_player_names(self):
@@ -218,7 +221,7 @@ class LiteratureAPI:
             'payload': {
                 'names': names
             }
-        })
+        }, exclude_bots=True)
 
     def _fill_bots(self, message):
         """ Fill the remaining players with bots. """
@@ -227,7 +230,7 @@ class LiteratureAPI:
         for i in range(self.n_players - self.current_players):
             self.register_new_player(
                 util.BotClient(),
-                'Bot {}'.format(self.current_players + i + 1))
+                'Bot {}'.format(self.current_players + i))
 
     def handle_message(self, message):
         action_map = {

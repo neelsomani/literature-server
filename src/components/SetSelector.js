@@ -89,7 +89,7 @@ export default class SetSelector extends Component {
                             .map((p) =>
                                 <td key={'indicator-' + r + this.suitIndicator + '-' + p}>
                                     <label>{this.radioButton(r + this.suitIndicator, p)}
-                            Player {p} </label>
+                                        {(this.props.playerNames || {})[p.toString()]} </label>
                                 </td>)}
                     </tr>
                 ))}
