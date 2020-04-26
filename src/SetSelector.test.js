@@ -18,27 +18,32 @@ it('renders without crashing', () => {
 })
 
 it('selects the correct cards by default', () => {
-  const correct = {
+  const preselected = {
     '8D': 0,
     '9D': 1,
-    '10D': 0,
     'JD': 1,
     'QD': 3,
     'KD': 3
   }
 
   const makeClaim = (possessions) => {
-    Object.keys(possessions).forEach((k) => {
-      expect(possessions[k]).toBe(correct[k]);
+    Object.keys(preselected).forEach((k) => {
+      expect(possessions[k]).toBe(preselected[k]);
     })
+    expect(possessions['10D']).toBe(0);
   }
 
   ReactDOM.render(
     <SetSelector
       set='KD'
       nPlayers={4}
-      correct={correct}
+      correct={preselected}
       makeClaim={makeClaim} />, container);
+
+  const radios = container.getElementsByClassName('claim-10D');
+  for (let i = 0; i < radios.length; i++) {
+    if (radios[i].value == 0) radios[i].click();
+  }
 
   container.getElementsByClassName('MakeClaimButton')[0].click();
 })

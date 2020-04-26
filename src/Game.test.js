@@ -35,7 +35,7 @@ function initSixPlayerGame() {
       action: 'register',
       payload: {
         success: true,
-        uuid: PLAYER_KEY,
+        player_uuid: PLAYER_KEY,
         player_n: 0,
         n_players: 6,
         time_limit: 30

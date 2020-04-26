@@ -82,7 +82,7 @@
   border: 1px solid black;
 }
 
-.ClaimButton {
+.ClaimButton, .BotsButton {
   position: absolute;
   bottom: 2%;
   right: 2%;

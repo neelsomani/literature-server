@@ -1,4 +1,5 @@
 import json
+import random
 import time
 import uuid
 
@@ -6,6 +7,7 @@ import gevent
 import literature
 
 from constants import *
+import util
 
 VISITOR_PLAYER_ID = -1
 
@@ -15,15 +17,14 @@ class RoomManager:
     DEFAULT_N_PLAYERS = 4
     DELETE_ROOMS_AFTER_MIN = 10
 
-    def __init__(self):
+    def __init__(self, logger):
         self.games = {}
+        self.logger = logger
 
-    def handle_message(self, message, logger):
+    def handle_message(self, message):
         game = self.games.get(message['game_uuid'])
         if game is None:
-            logger.exception(
-                'Invalid game_uuid: {}'.format(json.dumps(message))
-            )
+            self.logger.info('Invalid game_uuid: {}'.format(message))
             return
         game.handle_message(message)
 
@@ -39,10 +40,10 @@ class RoomManager:
 
     def join_game(self,
                   client,
-                  logger,
                   player_uuid=None,
                   game_uuid=None,
-                  n_players=DEFAULT_N_PLAYERS):
+                  n_players=DEFAULT_N_PLAYERS,
+                  username=None):
         """
         Register a WebSocket connection for updates.
 
@@ -50,31 +51,34 @@ class RoomManager:
         - game_uuid
         - player_uuid
         - n_players
+        - username
 
         Order of priorities:
         1. Reconnect as player `player_uuid` to game `game_uuid` if possible.
         2. Attempt connecting to `game_uuid` as any player.
         3. Create new game with `n_players`.
         """
-
         if game_uuid in self.games:
             if player_uuid in self.games[game_uuid].users:
                 # Connect as this player to the game.
+                self.logger.info(
+                    'Player {} has reconnected'.format(player_uuid))
                 player = self.games[game_uuid].users[player_uuid]
                 player.connected = True
                 player.socket = client
+                player.username = username
                 self.games[game_uuid].register_with_uuid(player_uuid)
             else:
-                self.games[game_uuid].register_new_player(client)
+                self.games[game_uuid].register_new_player(client, username)
             return
 
-        n_players = RoomManager._parse_n_players(n_players, logger)
+        n_players = RoomManager._parse_n_players(n_players, self.logger)
         game_uuid = _uuid(self.games)
         self.games[game_uuid] = LiteratureAPI(game_uuid=game_uuid,
-                                              logger=logger,
+                                              logger=self.logger,
                                               n_players=n_players,
                                               time_limit=60)
-        self.games[game_uuid].register_new_player(client)
+        self.games[game_uuid].register_new_player(client, username)
 
     def delete_unused_rooms(self):
         """ Delete rooms that have not executed a move in the last
@@ -86,10 +90,26 @@ class RoomManager:
 
 
 class User:
-    def __init__(self, socket, player_n, connected):
+    MAX_USERNAME_LENGTH = 20
+
+    def __init__(self, socket, player_n, connected, username):
         self.socket = socket
         self.player_n = player_n
         self.connected = connected
+        self.username = username
+
+    @property
+    def username(self):
+        if not self.connected:
+            return 'Bot {}'.format(self.player_n)
+        return self._username
+
+    @username.setter
+    def username(self, u):
+        if not u or u.strip() == '':
+            self._username = 'Player {}'.format(self.player_n)
+        else:
+            self._username = u[:User.MAX_USERNAME_LENGTH]
 
 
 class LiteratureAPI:
@@ -97,6 +117,7 @@ class LiteratureAPI:
     Interface for registering and updating WebSocket clients
     for a given game.
     """
+    BOT_SECOND_DELAY = 10
 
     def __init__(self,
                  game_uuid,
@@ -123,28 +144,29 @@ class LiteratureAPI:
         self.current_players = 0
         # `last_executed_move` is the timestamp of the last executed move,
         # used to determine if this game is inactive.
-        self.last_executed_move = 0
+        current_time = time.time()
+        self.last_executed_move = current_time
         # `move_timestamp` gives the base time for the current time limit,
         # which might be later than the `last_executed_move` if the turn is
         # forcibly switched.
-        self.move_timestamp = 0
+        self.move_timestamp = current_time
         self.time_limit = time_limit
         self.logger.info('Initialized game {}'.format(game_uuid))
+        self.stop_bots = lambda: None
 
-    def register_new_player(self, client):
+    def register_new_player(self, client, username):
         """ Register a new user for this game. """
-        connected = False
         if self.current_players >= self.n_players:
             player_n = VISITOR_PLAYER_ID
         else:
-            connected = True
             player_n = self.current_players
 
         self.current_players += 1
         player_uuid = _uuid(self.users)
         self.users[player_uuid] = User(socket=client,
                                        player_n=player_n,
-                                       connected=connected)
+                                       connected=True,
+                                       username=username)
         self.register_with_uuid(player_uuid)
 
     def register_with_uuid(self, player_uuid):
@@ -164,6 +186,7 @@ class LiteratureAPI:
             'payload': payload
         })
         self.logger.info('Sent registration to user {}'.format(player_uuid))
+        self._send_player_names()
 
         if self.current_players == self.n_players:
             self.logger.info('Received {} players for game {}'.format(
@@ -189,30 +212,135 @@ class LiteratureAPI:
         except:
             for player_uuid in self.users:
                 if self.users[player_uuid].socket == client:
-                    self.users[player_uuid].connected = False
+                    u = self.users[player_uuid]
+                    u.connected = False
                     self.logger.info('Player {} is disconnected from game {}'
                                      .format(player_uuid, self.uuid))
-            # TODO(@neel): Replace disconnected player with bot.
+                    self._send_player_names()
 
-    def _send_all(self, message):
+    def _send_all(self, message, exclude_bots=False):
         """ Send a message to all clients. """
         for user in self.users.values():
+            if exclude_bots and not user.connected:
+                continue
             gevent.spawn(self._send, user.socket, message)
+
+    def _send_player_names(self):
+        """ Send the players names to all players. """
+        names = {u.player_n: u.username for u in self.users.values()}
+        self._send_all({
+            'action': PLAYER_NAMES,
+            'payload': {
+                'names': names
+            }
+        }, exclude_bots=True)
+
+    def _fill_bots(self, message):
+        """ Fill the remaining players with bots. """
+        if message.get('key') not in self.users:
+            return
+        for i in range(self.n_players - self.current_players):
+            self.register_new_player(
+                util.BotClient(),
+                'Bot {}'.format(self.current_players + i))
 
     def handle_message(self, message):
         action_map = {
             CLAIM: self._claim,
             MOVE: self._move,
-            SWITCH_TEAM: self._switch_team
+            SWITCH_TEAM: self._switch_team,
+            START_GAME: self._fill_bots
         }
         fn = action_map.get(message['action'])
         if fn is None:
             self.logger.exception(
                 'Received bad action for message: {}'
-                .format(json.dumps(message))
+                .format(message)
             )
             return
         fn(message.get('payload', {}))
+
+    def _move_if_possible(self, user, use_all_knowledge):
+        """
+        Return a list of valid Moves for this User.
+
+        If `use_all_knowledge` is True, then only return moves that could
+        possibly be successful.
+        """
+        player = self.game.players[user.player_n]
+        moves = []
+        for p in self.game.players:
+            moves.extend([
+                player.asks(p).to_give(
+                    literature.Card.Name(r, s)
+                )
+                for r in literature.MINOR | literature.MAJOR
+                for s in literature.Suit
+                if player.valid_ask(p,
+                                    literature.Card.Name(r, s),
+                                    use_all_knowledge)
+            ])
+        if len(moves) != 0:
+            return moves[int(random.random() * len(moves))]
+
+    def execute_bot_moves(self):
+        """
+        Make claims on behalf of bots. Make a move if the current turn
+        is a bot's.
+
+        Stop once the first claim or move is made. The function should be
+        called with a delay so the users have time to read the moves.
+        """
+        for player_uuid, p in self.users.items():
+            if p.connected:
+                continue
+            claims = self.game.players[p.player_n].evaluate_claims()
+            new_claims = {
+                h: c for h, c in claims.items()
+                if self.game.claims[h] == literature.Team.NEITHER
+            }
+            if len(new_claims) == 0:
+                continue
+            self.logger.info('Making claim on behalf of bot {}'
+                             .format(player_uuid))
+            _random_claim = list(new_claims.keys())[0]
+            self.handle_message({
+                'action': CLAIM,
+                'payload': {
+                    'key': player_uuid,
+                    'possessions': {
+                        c.serialize(): p.unique_id
+                        for c, p in new_claims[_random_claim].items()
+                    }
+                }
+            })
+            return
+        self.logger.info('Bots for game {} found no claims this turn'
+                         .format(self.uuid))
+
+        current_uuid = None
+        for player_uuid in self.users:
+            if self.users[player_uuid].player_n == self.game.turn.unique_id:
+                current_uuid = player_uuid
+                break
+        if not current_uuid:
+            return
+
+        bot = self.users[current_uuid]
+        if not bot.connected:
+            self.logger.info('Executing move for bot {}'.format(current_uuid))
+            move = self._move_if_possible(user=bot, use_all_knowledge=True)
+            if not move:
+                move = self._move_if_possible(user=bot,
+                                              use_all_knowledge=False)
+            self.handle_message({
+                'action': MOVE,
+                'payload': {
+                    'key': current_uuid,
+                    'respondent': move.respondent.unique_id,
+                    'card': move.card.serialize()
+                }
+            })
 
     def _claim(self, payload):
         """
@@ -220,7 +348,7 @@ class LiteratureAPI:
         Send the whether the player was correct in addition
         to the correct pairings to all players.
 
-        The included fields are:
+        The included fields of the response are:
         - `claim_by`
         - `half_suit`
         - `turn`
@@ -250,12 +378,6 @@ class LiteratureAPI:
         _random_card = list(payload['possessions'])[0]
         half_suit = literature.deserialize(_random_card[:-1],
                                            _random_card[-1]).half_suit()
-        score = {
-            t.name.lower():
-                sum(self.game.claims[literature.HalfSuit(h, s)] == t
-                    for h in literature.Half for s in literature.Suit)
-            for t in literature.Team
-        }
         self._send_all({
             'action': CLAIM,
             'payload': self._with_player_info({
@@ -269,11 +391,13 @@ class LiteratureAPI:
                 'truth': {
                     c.serialize(): p.unique_id
                     for c, p in self.game.actual_possessions[half_suit].items()
-                },
-                'score': score
+                }
             })
         })
         self._send_hands()
+        self.stop_bots()
+        self.stop_bots = util.schedule(LiteratureAPI.BOT_SECOND_DELAY,
+                                       self.execute_bot_moves)
 
     def _move(self, payload):
         """
@@ -325,13 +449,20 @@ class LiteratureAPI:
 
     def _with_player_info(self, payload):
         """
-        Add the `move_timestamp` and `n_cards` to the dictionary.
+        Add the `move_timestamp`, `score`, and `n_cards` to the dictionary.
         """
+        score = {
+            t.name.lower():
+                sum(self.game.claims[literature.HalfSuit(h, s)] == t
+                    for h in literature.Half for s in literature.Suit)
+            for t in literature.Team
+        }
         payload.update({
             'move_timestamp': self.move_timestamp,
             'n_cards': {
                 i.unique_id: i.unclaimed_cards() for i in self.game.players
-            }
+            },
+            'score': score
         })
         return payload
 
@@ -340,12 +471,13 @@ class LiteratureAPI:
         Send the last move, the current player's turn, and each player's number
         of cards to all players.
 
-        The included fields are:
+        The included fields of the response are:
         - `interrogator`
         - `respondent`
         - `card`
         - `success`
         - `turn`
+        - `score`
         - `move_timestamp`
         - `n_cards`
 
@@ -360,6 +492,9 @@ class LiteratureAPI:
                     'turn': self.game.turn.unique_id
                 })
             })
+            self.stop_bots()
+            self.stop_bots = util.schedule(LiteratureAPI.BOT_SECOND_DELAY,
+                                           self.execute_bot_moves)
             return
 
         last_move, move_success = (
@@ -376,6 +511,9 @@ class LiteratureAPI:
                 'success': move_success
             })
         })
+        self.stop_bots()
+        self.stop_bots = util.schedule(LiteratureAPI.BOT_SECOND_DELAY,
+                                       self.execute_bot_moves)
 
     def _send_hands(self):
         """

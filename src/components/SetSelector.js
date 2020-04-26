@@ -51,9 +51,9 @@ export default class SetSelector extends Component {
             const cardDict = this.state.possessions[p];
             possessions[p] = {};
             Object.keys(cardDict).forEach((c) => {
-                if (c === card && p !== player) {
+                if (c === card && parseInt(p) !== player) {
                     possessions[p][c] = false;
-                } else if (c === card && p === player) {
+                } else if (c === card && parseInt(p) === player) {
                     possessions[p][c] = true;
                 } else {
                     possessions[p][c] = cardDict[c];
@@ -70,6 +70,7 @@ export default class SetSelector extends Component {
             type='radio'
             value={player}
             name={'claim-' + card}
+            className={'claim-' + card}
             {...{ disabled: this.disabled[card] }}
             {...{ checked: this.state.possessions[player][card] }}
             onChange={() => this.handleOptionChange(card, player)} />
@@ -88,7 +89,7 @@ export default class SetSelector extends Component {
                             .map((p) =>
                                 <td key={'indicator-' + r + this.suitIndicator + '-' + p}>
                                     <label>{this.radioButton(r + this.suitIndicator, p)}
-                            Player {p} </label>
+                                        {(this.props.playerNames || {})[p.toString()]} </label>
                                 </td>)}
                     </tr>
                 ))}

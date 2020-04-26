@@ -32,7 +32,7 @@ export default class ClaimDisplay extends Component {
                         <a href='#!'
                             style={{ color: '#10104a' }}
                             onClick={() => this.props.showFullClaim()}>{success}</a>:
-                        {' '}Player {this.props.claimBy} claims
+                        {' '}{this.props.playerNames[this.props.claimBy.toString()]} claims
                         {' ' + this.props.halfSuit.half + ' ' + this.props.halfSuit.suit}
                     </div>
                 )}

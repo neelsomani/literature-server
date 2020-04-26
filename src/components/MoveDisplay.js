@@ -9,8 +9,9 @@ export default class MoveDisplay extends Component {
         }
         const success = (this.props.success && 'Success') || 'Failure';
         return <div className='MoveDisplay'>
-            {success}: Player {this.props.interrogator}
-            {' ' + this.props.card} from Player {this.props.respondent}
+            {success}: {this.props.playerNames[this.props.interrogator.toString()]}
+            {' ' + this.props.card} from {this.props.playerNames[
+                this.props.respondent.toString()]}
         </div>
     }
 }

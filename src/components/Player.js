@@ -23,9 +23,9 @@ export default class Players extends Component {
                 src={icons[this.props.playerN % 2]}
                 style={{ width: '100%' }} />
             <p style={playerInfo}>
-                Player {this.props.playerN}
+                {this.props.playerName}
             </p>
-            {this.props.nCards &&
+            {(this.props.nCards !== undefined) &&
                 <p style={cardsInfo}>{this.props.nCards} cards</p>}
         </div >
     }

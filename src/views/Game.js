@@ -22,6 +22,8 @@ class Game extends Component {
     super(props);
     const claims = {};
     SET_INDICATORS.forEach((s) => claims[s] = UNCLAIMED);
+    const playerNames = {};
+    [...Array(8).keys()].forEach((p) => playerNames[p] = 'Player ' + p);
     this.state = {
       uuid: '',
       gameUuid: '',
@@ -36,16 +38,28 @@ class Game extends Component {
         even: 0,
         odd: 0,
         discard: 0
-      }
+      },
+      playerNames
     };
     const audioUrl = process.env.PUBLIC_URL + '/bell.mp3';
     this.bell = new Audio(audioUrl);
+  }
+
+  startGame() {
+    this.sendMessage({
+      action: 'start_game',
+      game_uuid: this.state.gameUuid,
+      payload: {
+        key: this.state.uuid
+      }
+    })
   }
 
   makeClaim(possessions) {
     this.hideClaimModal();
     this.sendMessage({
       action: 'claim',
+      game_uuid: this.state.gameUuid,
       payload: {
         key: this.state.uuid,
         possessions
@@ -85,6 +99,7 @@ class Game extends Component {
   makeMove(card, toBeRespondent) {
     this.sendMessage({
       action: 'move',
+      game_uuid: this.state.gameUuid,
       payload: {
         key: this.state.uuid,
         respondent: toBeRespondent,
@@ -104,7 +119,7 @@ class Game extends Component {
       time_limit,
       game_uuid
     } = payload;
-    // TODO(@neel): Store uuid when received.
+    localStorage.setItem(PLAYER_UUID, player_uuid);
     this.setState({
       uuid: player_uuid,
       playerN: player_n,
@@ -128,7 +143,8 @@ class Game extends Component {
       success,
       card,
       respondent,
-      interrogator
+      interrogator,
+      score
     } = payload;
     if (turn === this.state.playerN && turn !== this.state.turn)
       this.bell.play();
@@ -139,7 +155,11 @@ class Game extends Component {
       success,
       card,
       respondent,
-      interrogator
+      interrogator,
+      score: {
+        ...this.state.score,
+        ...score
+      }
     })
     if (turn !== this.state.playerN) this.hideMakeMoveModal();
   }
@@ -163,7 +183,10 @@ class Game extends Component {
       nCards: n_cards,
       moveTimestamp: move_timestamp,
       turn,
-      score,
+      score: {
+        ...this.state.score,
+        ...score
+      },
       claims,
       lastClaim: {
         claimBy: claim_by,
@@ -173,6 +196,10 @@ class Game extends Component {
       }
     })
     if (turn !== this.state.playerN) this.hideMakeMoveModal();
+  }
+
+  playerNames(payload) {
+    this.setState({ playerNames: payload.names });
   }
 
   handleMessage(message) {
@@ -192,6 +219,9 @@ class Game extends Component {
         break;
       case 'claim':
         this.claim(data.payload)
+        break;
+      case 'player_names':
+        this.playerNames(data.payload)
         break;
       default:
         throw new Error('Unhandled action: ' + data.action);
@@ -215,6 +245,7 @@ class Game extends Component {
     const player_uuid = localStorage.getItem(PLAYER_UUID);
     const sendParams = window.jQuery.param({
       n_players: queryParams.get('n_players'),
+      username: queryParams.get('username'),
       game_uuid: pathParams[pathParams.length - 1],
       player_uuid
     });
@@ -237,26 +268,33 @@ class Game extends Component {
         <Players
           nPlayers={this.state.nPlayers}
           playerN={this.state.playerN}
+          playerNames={this.state.playerNames}
           nCards={this.state.nCards}
           turn={this.state.turn}
           showModal={this.showMakeMoveModal.bind(this)} />
         <MoveDisplay
           success={this.state.success}
           card={this.state.card}
+          playerNames={this.state.playerNames}
           interrogator={this.state.interrogator}
           respondent={this.state.respondent} />
         <ClaimDisplay
           success={this.state.lastClaim.success}
           claimBy={this.state.lastClaim.claimBy}
+          playerNames={this.state.playerNames}
           halfSuit={this.state.lastClaim.halfSuit}
           showFullClaim={() => this.setState({ showFullClaim: true })}
         />
         <Timer
           moveTimestamp={this.state.moveTimestamp}
           timeLimit={this.state.timeLimit}
-          switchTeam={() => this.sendMessage({ 'action': 'switch_team' })}
+          switchTeam={() => this.sendMessage({
+            action: 'switch_team',
+            game_uuid: this.state.gameUuid
+          })}
           turn={this.state.turn}
           gameUuid={this.state.gameUuid}
+          playerNames={this.state.playerNames}
           playerN={this.state.playerN} />
         <CardGroup
           handClass='Player-hand'
@@ -271,6 +309,7 @@ class Game extends Component {
         {this.state.showClaimModal && <ClaimModal
           playerN={this.state.playerN}
           nPlayers={this.state.nPlayers}
+          playerNames={this.state.playerNames}
           hand={this.state.hand}
           claims={this.state.claims}
           hideModal={this.hideClaimModal.bind(this)}
@@ -279,15 +318,19 @@ class Game extends Component {
           <CorrectClaimModal
             nPlayers={this.state.nPlayers}
             correct={this.state.lastClaim.truth}
+            playerNames={this.state.playerNames}
             set={SET_NAME_MAP[(this.state.lastClaim.halfSuit || {}).half] +
               (this.state.lastClaim.halfSuit || {}).suit}
             hideModal={() => { this.setState({ showFullClaim: false }) }}
           />}
 
         <ScoreDisplay score={this.state.score} />
-        {this.state.playerN !== -1 && <button
+        {this.state.playerN !== -1 && this.state.moveTimestamp && <button
           className='ClaimButton'
           onClick={() => this.setState({ showClaimModal: true })}>Make Claim</button>}
+        {!this.state.moveTimestamp && <button
+          className='BotsButton'
+          onClick={this.startGame.bind(this)}>Fill With Bots</button>}
       </div>
     );
   }

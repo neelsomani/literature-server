@@ -40,6 +40,7 @@ export default class ClaimModal extends Component {
                 {!this.state.showSets && <SetSelector
                     team={this.props.playerN % 2}
                     nPlayers={this.props.nPlayers}
+                    playerNames={this.props.playerNames}
                     correct={this.correct}
                     makeClaim={this.props.makeClaim}
                     set={this.state.set} />}

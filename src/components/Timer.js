@@ -42,7 +42,7 @@ export default class Timer extends Component {
                     src={img}
                     height={15}
                     width={15}
-                    alt='Team Icon' /> Player {this.props.playerN}
+                    alt='Team Icon' /> {this.props.playerNames[this.props.playerN]}
             </span>
         )
         return <div className='Timer'>

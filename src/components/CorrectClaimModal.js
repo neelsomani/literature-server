@@ -15,6 +15,7 @@ export default class ClaimModal extends Component {
             <div className='CardSelector' style={{ zIndex: 10 }}>
                 <SetSelector
                     nPlayers={this.props.nPlayers}
+                    playerNames={this.props.playerNames}
                     correct={this.props.correct}
                     set={this.props.set} />
             </div>
