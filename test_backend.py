@@ -270,3 +270,21 @@ def test_rooms(monkeypatch):
     assert msg['player_n'] != VISITOR_PLAYER_ID and \
         msg['game_uuid'] == game_uuid and \
         msg['player_uuid'] == player_uuid
+
+
+def test_room_deletion(monkeypatch):
+    rm = RoomManager()
+    new_room_client = MockClient()
+    rm.join_game(new_room_client,
+                 logging.getLogger(__name__),
+                 player_uuid=None,
+                 game_uuid=None,
+                 n_players=N_PLAYERS)
+    assert len(rm.games) == 1
+    assert list(rm.games.values())[0].last_executed_move == 0
+    monkeypatch.setattr(time, 'time', lambda: 5 * 60)
+    rm.delete_unused_rooms()
+    assert len(rm.games) == 1
+    monkeypatch.setattr(time, 'time', lambda: 15 * 60)
+    rm.delete_unused_rooms()
+    assert len(rm.games) == 0

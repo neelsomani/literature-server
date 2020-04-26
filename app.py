@@ -1,5 +1,6 @@
 import json
 import os
+from threading import Event, Thread
 
 from flask import Flask, request
 from flask_sockets import Sockets
@@ -12,6 +13,20 @@ app.debug = 'DEBUG' in os.environ
 
 sockets = Sockets(app)
 room_manager = RoomManager()
+
+
+def call_repeatedly(interval, func, *args):
+    stopped = Event()
+
+    def loop():
+        while not stopped.wait(interval):
+            func(*args)
+    Thread(target=loop).start()
+    return stopped.set
+
+
+call_repeatedly(RoomManager.DELETE_ROOMS_AFTER_MIN * 60,
+                room_manager.delete_unused_rooms)
 
 
 @app.route('/')

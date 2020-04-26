@@ -13,6 +13,7 @@ VISITOR_PLAYER_ID = -1
 class RoomManager:
     VALID_N_PLAYERS = {4, 6, 8}
     DEFAULT_N_PLAYERS = 4
+    DELETE_ROOMS_AFTER_MIN = 10
 
     def __init__(self):
         self.games = {}
@@ -74,6 +75,14 @@ class RoomManager:
                                               n_players=n_players,
                                               time_limit=60)
         self.games[game_uuid].register_new_player(client)
+
+    def delete_unused_rooms(self):
+        """ Delete rooms that have not executed a move in the last
+        10 minutes. """
+        for g in list(self.games.keys()):
+            if self.games[g].last_executed_move \
+                    + self.DELETE_ROOMS_AFTER_MIN * 60 <= time.time():
+                del self.games[g]
 
 
 class User:
