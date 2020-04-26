@@ -19,6 +19,7 @@ from constants import *
 import util
 
 MOCK_UNIQUE_ID = '1'
+MOCK_NAME = 'John'
 MISSING_CARD = Card.Name(3, Suit.CLUBS)
 TIME_LIMIT = 30
 N_PLAYERS = 4
@@ -84,7 +85,7 @@ def initialized_room(api):
     in_room = []
     for _ in range(N_PLAYERS):
         in_room.append(MockClient())
-        api.register_new_player(in_room[-1])
+        api.register_new_player(in_room[-1], None)
     return {
         'clients': in_room,
         'api': api
@@ -93,13 +94,16 @@ def initialized_room(api):
 
 def test_registration(api):
     c = MockClient()
-    api.register_new_player(c)
-    assert len(c.messages) == 1
-    msg = c.messages[0]
-    assert msg['payload']['player_n'] != VISITOR_PLAYER_ID
-    assert 'player_uuid' in msg['payload']
-    assert msg['payload']['time_limit'] == TIME_LIMIT
-    assert msg['payload']['n_players'] == N_PLAYERS
+    api.register_new_player(c, MOCK_NAME)
+    # Registration + player_names message
+    assert len(c.messages) == 2
+    msg = _action_from_messages(c.messages, REGISTER)
+    assert msg['player_n'] != VISITOR_PLAYER_ID
+    assert 'player_uuid' in msg
+    assert msg['time_limit'] == TIME_LIMIT
+    assert msg['n_players'] == N_PLAYERS
+    msg = _action_from_messages(c.messages, PLAYER_NAMES)
+    assert msg['names']['0'] == MOCK_NAME
 
 
 def _action_from_messages(messages, action):
@@ -112,26 +116,27 @@ def _action_from_messages(messages, action):
 def test_full_room(initialized_room):
     api, clients = initialized_room['api'], initialized_room['clients']
     for i in clients:
-        assert len(i.messages) == 3
-        assert i.messages[0]['action'] == REGISTER
-        recv_actions = {
-            i.messages[1]['action'],
-            i.messages[2]['action']
-        }
-        assert HAND in recv_actions and LAST_MOVE in recv_actions
+        assert len(_filter_name_updates(i.messages)) == 3
+        recv_actions = {m['action'] for m in i.messages}
+        assert REGISTER in recv_actions
+        assert HAND in recv_actions
+        assert LAST_MOVE in recv_actions
+        assert PLAYER_NAMES in recv_actions
     c = MockClient()
-    api.register_new_player(c)
+    api.register_new_player(c, None)
     msg = _action_from_messages(c.messages, REGISTER)
     assert msg['player_n'] == VISITOR_PLAYER_ID
     # The visitor should still receive the last move
-    assert len(c.messages) == 2
+    for action in [REGISTER, LAST_MOVE, PLAYER_NAMES]:
+        _action_from_messages(c.messages, action)
 
 
 def test_switching_turn(monkeypatch, initialized_room):
     api, clients = initialized_room['api'], initialized_room['clients']
     api.handle_message({'action': SWITCH_TEAM})
     for i in clients:
-        assert len(i.messages) == 3
+        # Message for registration, last_move, and hand
+        assert len(_filter_name_updates(i.messages)) == 3
 
     # Get the current turn
     turn = _action_from_messages(clients[0].messages, LAST_MOVE)['turn']
@@ -140,7 +145,7 @@ def test_switching_turn(monkeypatch, initialized_room):
     monkeypatch.setattr(time, 'time', lambda: 45)
     api.handle_message({'action': SWITCH_TEAM})
     for i in clients:
-        assert len(i.messages) == 5
+        assert len(_filter_name_updates(i.messages)) == 5
 
     current_turn = _action_from_messages(
         clients[0].messages[-2:], LAST_MOVE
@@ -150,11 +155,11 @@ def test_switching_turn(monkeypatch, initialized_room):
 
 def test_switch_turn_before_start(monkeypatch, api):
     c = MockClient()
-    api.register_new_player(c)
-    assert len(c.messages) == 1
+    api.register_new_player(c, None)
+    assert len(_filter_name_updates(c.messages)) == 1
     monkeypatch.setattr(time, 'time', lambda: 45)
     api.handle_message({'action': SWITCH_TEAM})
-    assert len(c.messages) == 1
+    assert len(_filter_name_updates(c.messages)) == 1
 
 
 def _get_p0_key(clients):
@@ -165,9 +170,13 @@ def _get_p0_key(clients):
     raise ValueError('Player 0 not found')
 
 
+def _filter_name_updates(messages):
+    return [m for m in messages if m['action'] != PLAYER_NAMES]
+
+
 def test_make_move(initialized_room):
     api, clients = initialized_room['api'], initialized_room['clients']
-    assert len(clients[0].messages) == 3
+    assert len(_filter_name_updates(clients[0].messages)) == 3
     p0_key = _get_p0_key(clients)
     api.handle_message({
         'action': MOVE,
@@ -177,7 +186,7 @@ def test_make_move(initialized_room):
             'card': MISSING_CARD.serialize()
         }
     })
-    assert len(clients[0].messages) == 5
+    assert len(_filter_name_updates(clients[0].messages)) == 5
     move = _action_from_messages(clients[0].messages[-2:], LAST_MOVE)
     assert move['success']
     assert move['interrogator'] == 0
@@ -201,7 +210,7 @@ def test_claim(initialized_room):
             }
         }
     })
-    assert len(clients[0].messages) == 5
+    assert len(_filter_name_updates(clients[0].messages)) == 5
     payload = _action_from_messages(clients[0].messages[-2:], CLAIM)
     assert payload['claim_by'] == 0
     assert payload['half_suit']['half'] == 'minor'
@@ -316,7 +325,7 @@ def test_bot_moves(initialized_room):
 
 def test_start_game(api):
     c = MockClient()
-    api.register_new_player(c)
+    api.register_new_player(c, None)
     assert api.current_players == 1
     api.handle_message({
         'action': START_GAME,

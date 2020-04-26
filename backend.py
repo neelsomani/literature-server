@@ -43,7 +43,8 @@ class RoomManager:
                   client,
                   player_uuid=None,
                   game_uuid=None,
-                  n_players=DEFAULT_N_PLAYERS):
+                  n_players=DEFAULT_N_PLAYERS,
+                  username=None):
         """
         Register a WebSocket connection for updates.
 
@@ -51,6 +52,7 @@ class RoomManager:
         - game_uuid
         - player_uuid
         - n_players
+        - username
 
         Order of priorities:
         1. Reconnect as player `player_uuid` to game `game_uuid` if possible.
@@ -65,9 +67,10 @@ class RoomManager:
                 player = self.games[game_uuid].users[player_uuid]
                 player.connected = True
                 player.socket = client
+                player.username = username
                 self.games[game_uuid].register_with_uuid(player_uuid)
             else:
-                self.games[game_uuid].register_new_player(client)
+                self.games[game_uuid].register_new_player(client, username)
             return
 
         n_players = RoomManager._parse_n_players(n_players, self.logger)
@@ -76,7 +79,7 @@ class RoomManager:
                                               logger=self.logger,
                                               n_players=n_players,
                                               time_limit=60)
-        self.games[game_uuid].register_new_player(client)
+        self.games[game_uuid].register_new_player(client, username)
 
     def delete_unused_rooms(self):
         """ Delete rooms that have not executed a move in the last
@@ -88,10 +91,11 @@ class RoomManager:
 
 
 class User:
-    def __init__(self, socket, player_n, connected):
+    def __init__(self, socket, player_n, connected, username):
         self.socket = socket
         self.player_n = player_n
         self.connected = connected
+        self.username = username
 
 
 class LiteratureAPI:
@@ -135,7 +139,7 @@ class LiteratureAPI:
         self.logger.info('Initialized game {}'.format(game_uuid))
         self.stop_bots = lambda: None
 
-    def register_new_player(self, client):
+    def register_new_player(self, client, username):
         """ Register a new user for this game. """
         connected = False
         if self.current_players >= self.n_players:
@@ -143,12 +147,15 @@ class LiteratureAPI:
         else:
             connected = True
             player_n = self.current_players
+        if not username:
+            username = 'Player {}'.format(player_n)
 
         self.current_players += 1
         player_uuid = _uuid(self.users)
         self.users[player_uuid] = User(socket=client,
                                        player_n=player_n,
-                                       connected=connected)
+                                       connected=connected,
+                                       username=username)
         self.register_with_uuid(player_uuid)
 
     def register_with_uuid(self, player_uuid):
@@ -168,6 +175,7 @@ class LiteratureAPI:
             'payload': payload
         })
         self.logger.info('Sent registration to user {}'.format(player_uuid))
+        self._send_player_names()
 
         if self.current_players == self.n_players:
             self.logger.info('Received {} players for game {}'.format(
@@ -202,12 +210,24 @@ class LiteratureAPI:
         for user in self.users.values():
             gevent.spawn(self._send, user.socket, message)
 
+    def _send_player_names(self):
+        """ Send the players names to all players. """
+        names = {u.player_n: u.username for u in self.users.values()}
+        self._send_all({
+            'action': PLAYER_NAMES,
+            'payload': {
+                'names': names
+            }
+        })
+
     def _fill_bots(self, message):
         """ Fill the remaining players with bots. """
         if message.get('key') not in self.users:
             return
-        for _ in range(self.n_players - self.current_players):
-            self.register_new_player(util.BotClient())
+        for i in range(self.n_players - self.current_players):
+            self.register_new_player(
+                util.BotClient(),
+                'Bot {}'.format(self.current_players + i + 1))
 
     def handle_message(self, message):
         action_map = {
