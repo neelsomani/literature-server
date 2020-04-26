@@ -6,16 +6,13 @@ export default class Players extends Component {
         return <div className='Players'>
             {[
                 ...Array(this.props.nPlayers).keys()
-            ].map((p) => {
-                if (p != this.props.playerN) {
-                    return <Player
-                        key={'player_' + p}
-                        showModal={this.props.showModal}
-                        turn={this.props.turn}
-                        playerN={p}
-                        nCards={(this.props.nCards || {})[p]} />
-                }
-            })}
+            ].filter((p) => p !== this.props.playerN)
+                .map((p) => <Player
+                    key={'player_' + p}
+                    showModal={this.props.showModal}
+                    turn={this.props.turn}
+                    playerN={p}
+                    nCards={(this.props.nCards || {})[p]} />)}
         </div>;
     }
 }

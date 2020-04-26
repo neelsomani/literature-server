@@ -7,7 +7,7 @@ export default class MoveDisplay extends Component {
                 No move has been executed yet.
             </div>
         }
-        const success = this.props.success && 'Success' || 'Failure';
+        const success = (this.props.success && 'Success') || 'Failure';
         return <div className='MoveDisplay'>
             {success}: Player {this.props.interrogator}
             {' ' + this.props.card} from Player {this.props.respondent}

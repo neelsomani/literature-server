@@ -36,7 +36,7 @@ export default class ClaimModal extends Component {
                 {this.state.showSets && <CardGroup
                     clickCard={this.selectClaim.bind(this)}
                     suitClass='hhand-compact active-hand'
-                    cards={SET_INDICATORS.filter((s) => this.props.claims[s] == UNCLAIMED)} />}
+                    cards={SET_INDICATORS.filter((s) => this.props.claims[s] === UNCLAIMED)} />}
                 {!this.state.showSets && <SetSelector
                     team={this.props.playerN % 2}
                     nPlayers={this.props.nPlayers}

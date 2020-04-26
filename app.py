@@ -1,27 +1,44 @@
 import json
 import os
-import uuid
+from threading import Event, Thread
 
-from flask import Flask
+from flask import Flask, request
 from flask_sockets import Sockets
 import gevent
 
-from backend import LiteratureAPI
+from backend import RoomManager
 
 app = Flask(__name__, static_folder='build/', static_url_path='/')
 app.debug = 'DEBUG' in os.environ
 
 sockets = Sockets(app)
+room_manager = RoomManager()
 
-api = LiteratureAPI(u_id=uuid.uuid4().hex,
-                    logger=app.logger,
-                    n_players=4,
-                    time_limit=30)
+
+def call_repeatedly(interval, func, *args):
+    stopped = Event()
+
+    def loop():
+        while not stopped.wait(interval):
+            func(*args)
+    Thread(target=loop).start()
+    return stopped.set
+
+
+call_repeatedly(RoomManager.DELETE_ROOMS_AFTER_MIN * 60,
+                room_manager.delete_unused_rooms)
 
 
 @app.route('/')
+@app.route('/game')
+@app.route('/game/')
 def index():
     return app.send_static_file('index.html')
+
+
+@app.route('/game/<_>')
+def game(_):
+    return index()
 
 
 @app.route('/<path:path>')
@@ -31,7 +48,7 @@ def static_file(path):
 
 @sockets.route('/submit')
 def submit(ws):
-    """ Receive incoming messages. """
+    """ Receive incoming messages from the client. """
     while not ws.closed:
         gevent.sleep(0.1)
         msg = ws.receive()
@@ -46,12 +63,21 @@ def submit(ws):
             continue
 
         app.logger.info('Handling message: {}'.format(msg))
-        api.handle_message(user_msg)
+        room_manager.handle_message(user_msg, app.logger)
 
 
 @sockets.route('/receive')
 def receive(ws):
-    """ Register the WebSocket. """
-    api.register(ws)
+    """ Register the WebSocket to send messages to the client. """
+    game_uuid, player_uuid, n_players = (
+        request.args.get('game_uuid'),
+        request.args.get('player_uuid'),
+        request.args.get('n_players')
+    )
+    room_manager.join_game(client=ws,
+                           logger=app.logger,
+                           player_uuid=player_uuid,
+                           game_uuid=game_uuid,
+                           n_players=n_players)
     while not ws.closed:
         gevent.sleep(0.1)

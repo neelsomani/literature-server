@@ -10,7 +10,7 @@ export default class ClaimDisplay extends Component {
     }
 
     componentDidUpdate() {
-        if (this.props.halfSuit != this.state.lastHalfSuit) {
+        if (this.props.halfSuit !== this.state.lastHalfSuit) {
             const lastTimeout =
                 setTimeout(() => this.setState({ show: false }), 15 * 1000);
             clearTimeout(this.state.lastTimeout);
@@ -23,7 +23,7 @@ export default class ClaimDisplay extends Component {
     }
 
     render() {
-        const success = this.props.success && 'Success' || 'Failure';
+        const success = (this.props.success && 'Success') || 'Failure';
         return <div className='ClaimDisplay'>
             {(this.props.halfSuit !== undefined)
                 && this.state.show

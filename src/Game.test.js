@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import App from './App';
+import Game from './views/Game';
 
 const PLAYER_KEY = '123';
 window.HTMLMediaElement.prototype.play = () => { };
@@ -103,16 +103,25 @@ function _lastMove() {
   }
 }
 
+function _mockParamSerializer(params) {
+  return Object.keys(params).map((k) => {
+    return k + '=' + params[k];
+  }).join('&');
+}
+
 let socketWrapper;
 let container;
 
 beforeEach(() => {
   socketWrapper = new MockSocketWrapper();
   window.ReconnectingWebSocket = socketWrapper.socketClass();
+  window.jQuery = {
+    param: _mockParamSerializer
+  };
   window.cards = {}
   container = document.createElement('div');
   document.body.appendChild(container);
-  ReactDOM.render(<App />, container);
+  ReactDOM.render(<Game />, container);
 });
 
 afterEach(() => {

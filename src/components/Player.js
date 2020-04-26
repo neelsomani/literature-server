@@ -5,9 +5,9 @@ import PlayerOddIcon from './player-odd.png';
 export default class Players extends Component {
     render() {
         const icons = [PlayerEvenIcon, PlayerOddIcon];
-        let border = (this.props.turn == this.props.playerN) && {
+        let border = ((this.props.turn === this.props.playerN) && {
             border: 'solid 3px white'
-        } || {};
+        }) || {};
         const playerInfo = { textAlign: 'center', color: '#c0c0c0' };
         const cardsInfo = {
             textAlign: 'center',
@@ -19,6 +19,7 @@ export default class Players extends Component {
             style={border}
             onClick={() => this.props.showModal(this.props.playerN)}>
             <img
+                alt={'Player ' + this.props.playerN}
                 src={icons[this.props.playerN % 2]}
                 style={{ width: '100%' }} />
             <p style={playerInfo}>

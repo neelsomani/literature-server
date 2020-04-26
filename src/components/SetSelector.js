@@ -14,12 +14,12 @@ export default class SetSelector extends Component {
         this.suitIndicator = set[1];
         const possessions = {};
         [...Array(nPlayers).keys()]
-            .filter((p) => (team === undefined) || p % 2 == team)
+            .filter((p) => (team === undefined) || p % 2 === team)
             .forEach((p) => {
                 possessions[p] = {};
                 SETS[this.rankIndicator].forEach(
                     (r) => possessions[p][r + this.suitIndicator] =
-                        (correct || {})[r + this.suitIndicator] == p);
+                        (correct || {})[r + this.suitIndicator] === p);
             });
         const disabled = {};
         SETS[this.rankIndicator].forEach(
@@ -51,9 +51,9 @@ export default class SetSelector extends Component {
             const cardDict = this.state.possessions[p];
             possessions[p] = {};
             Object.keys(cardDict).forEach((c) => {
-                if (c == card && p != player) {
+                if (c === card && p !== player) {
                     possessions[p][c] = false;
-                } else if (c == card && p == player) {
+                } else if (c === card && p === player) {
                     possessions[p][c] = true;
                 } else {
                     possessions[p][c] = cardDict[c];
@@ -84,7 +84,7 @@ export default class SetSelector extends Component {
                             {r}{this.suitIndicator}:</td>
                         {[...Array(this.props.nPlayers).keys()]
                             .filter((p) => (this.props.team === undefined) ||
-                                (p % 2 == this.props.team))
+                                (p % 2 === this.props.team))
                             .map((p) =>
                                 <td key={'indicator-' + r + this.suitIndicator + '-' + p}>
                                     <label>{this.radioButton(r + this.suitIndicator, p)}

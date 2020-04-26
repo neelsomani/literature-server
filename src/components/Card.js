@@ -111,6 +111,7 @@ export default class Card extends Component {
 
     render() {
         return <img
+            alt={this.props.card}
             className='card'
             onClick={() => { this.props.clickCard && this.props.clickCard(this.props.card) }}
             src={this.cardMap[this.props.card]} />
