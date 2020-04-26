@@ -7,8 +7,73 @@ import literature
 
 from constants import *
 
-
 VISITOR_PLAYER_ID = -1
+
+
+class RoomManager:
+    VALID_N_PLAYERS = {4, 6, 8}
+    DEFAULT_N_PLAYERS = 4
+
+    def __init__(self):
+        self.games = {}
+
+    def handle_message(self, message, logger):
+        game = self.games.get(message['game_uuid'])
+        if game is None:
+            logger.exception(
+                'Invalid game_uuid: {}'.format(json.dumps(message))
+            )
+            return
+        game.handle_message(message)
+
+    @classmethod
+    def _parse_n_players(cls, n_players, logger):
+        try:
+            n = int(n_players)
+            if n in cls.VALID_N_PLAYERS:
+                return n
+        except ValueError:
+            logger.info('Could not parse n_players: {}'.format(n_players))
+        return cls.DEFAULT_N_PLAYERS
+
+    def join_game(self,
+                  client,
+                  logger,
+                  player_uuid=None,
+                  game_uuid=None,
+                  n_players=DEFAULT_N_PLAYERS):
+        """
+        Register a WebSocket connection for updates.
+
+        Handle initial payload from WebSocket, which can contain:
+        - game_uuid
+        - player_uuid
+        - n_players
+
+        Order of priorities:
+        1. Reconnect as player `player_uuid` to game `game_uuid` if possible.
+        2. Attempt connecting to `game_uuid` as any player.
+        3. Create new game with `n_players`.
+        """
+
+        if game_uuid in self.games:
+            if player_uuid in self.games[game_uuid].users:
+                # Connect as this player to the game.
+                player = self.games[game_uuid].users[player_uuid]
+                player.connected = True
+                player.socket = client
+                self.games[game_uuid].register_with_uuid(player_uuid)
+            else:
+                self.games[game_uuid].register_new_player(client)
+            return
+
+        n_players = RoomManager._parse_n_players(n_players, logger)
+        game_uuid = _uuid(self.games)
+        self.games[game_uuid] = LiteratureAPI(game_uuid=game_uuid,
+                                              logger=logger,
+                                              n_players=n_players,
+                                              time_limit=60)
+        self.games[game_uuid].register_new_player(client)
 
 
 class User:
@@ -25,11 +90,23 @@ class LiteratureAPI:
     """
 
     def __init__(self,
-                 u_id,
+                 game_uuid,
                  logger,
                  n_players,
                  time_limit=60):
-        self.u_id = u_id
+        """
+        Parameters
+        ----------
+        game_uuid : str
+            Unique ID for this game instance
+        logger : logging.Logger
+            Logger for debug messages
+        n_players : int
+            Number of players for the game
+        time_limit : int
+            Number of seconds between each turn. Defaults to 60.
+        """
+        self.uuid = game_uuid
         self.users = {}
         self.game = literature.get_game(n_players)
         self.logger = logger
@@ -43,45 +120,45 @@ class LiteratureAPI:
         # forcibly switched.
         self.move_timestamp = 0
         self.time_limit = time_limit
-        self.logger.info('Initialized game {}'.format(u_id))
+        self.logger.info('Initialized game {}'.format(game_uuid))
 
-    def _uuid(self):
-        u_id = uuid.uuid4().hex
-        while u_id in self.users:
-            u_id = uuid.uuid4().hex
-        return u_id
-
-    def register(self, client):
-        """ Register a WebSocket connection for updates. """
-        payload = {}
+    def register_new_player(self, client):
+        """ Register a new user for this game. """
+        connected = False
         if self.current_players >= self.n_players:
-            payload['success'] = False
             player_n = VISITOR_PLAYER_ID
         else:
-            payload['success'] = True
+            connected = True
             player_n = self.current_players
 
         self.current_players += 1
-        u_id = self._uuid()
-        self.users[u_id] = User(socket=client,
-                                player_n=player_n,
-                                connected=payload['success'])
-        payload.update({
+        player_uuid = _uuid(self.users)
+        self.users[player_uuid] = User(socket=client,
+                                       player_n=player_n,
+                                       connected=connected)
+        self.register_with_uuid(player_uuid)
+
+    def register_with_uuid(self, player_uuid):
+        """
+        Send the client the info for the specified `player_uuid`.
+        The `player_uuid` must already be present in `self.players`.
+        """
+        payload = {
             'n_players': self.n_players,
             'time_limit': self.time_limit,
-            'player_n': player_n,
-            'uuid': u_id,
-            'game_uuid': self.u_id
-        })
-        gevent.spawn(self._send, client, {
+            'player_n': self.users[player_uuid].player_n,
+            'player_uuid': player_uuid,
+            'game_uuid': self.uuid
+        }
+        gevent.spawn(self._send, self.users[player_uuid].socket, {
             'action': REGISTER,
             'payload': payload
         })
-        self.logger.info('Registered user {}'.format(u_id))
+        self.logger.info('Sent registration to user {}'.format(player_uuid))
 
         if self.current_players == self.n_players:
             self.logger.info('Received {} players for game {}'.format(
-                self.n_players, self.u_id
+                self.n_players, self.uuid
             ))
             current_time = time.time()
             self.move_timestamp = current_time
@@ -101,11 +178,11 @@ class LiteratureAPI:
         try:
             client.send(serialized)
         except:
-            for u_id in self.users:
-                if self.users[u_id].socket == client:
-                    self.users[u_id].connected = False
+            for player_uuid in self.users:
+                if self.users[player_uuid].socket == client:
+                    self.users[player_uuid].connected = False
                     self.logger.info('Player {} is disconnected from game {}'
-                                     .format(u_id, self.u_id))
+                                     .format(player_uuid, self.uuid))
             # TODO(@neel): Replace disconnected player with bot.
 
     def _send_all(self, message):
@@ -119,7 +196,7 @@ class LiteratureAPI:
             MOVE: self._move,
             SWITCH_TEAM: self._switch_team
         }
-        fn = action_map.get(message['action'], None)
+        fn = action_map.get(message['action'])
         if fn is None:
             self.logger.exception(
                 'Received bad action for message: {}'
@@ -305,3 +382,10 @@ class LiteratureAPI:
                 'action': HAND,
                 'payload': [c.serialize() for c in player.hand]
             })
+
+
+def _uuid(db):
+    u_id = uuid.uuid4().hex
+    while u_id in db:
+        u_id = uuid.uuid4().hex
+    return u_id

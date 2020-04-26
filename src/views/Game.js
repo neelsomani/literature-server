@@ -12,7 +12,8 @@ import {
   SET_INDICATORS,
   CLAIMED,
   UNCLAIMED,
-  SET_NAME_MAP
+  SET_NAME_MAP,
+  PLAYER_UUID
 } from '../components/Constants';
 import './Game.css';
 
@@ -97,14 +98,15 @@ class Game extends Component {
 
   register(payload) {
     const {
-      uuid,
+      player_uuid,
       player_n,
       n_players,
       time_limit,
       game_uuid
     } = payload;
+    // TODO(@neel): Store uuid when received.
     this.setState({
-      uuid,
+      uuid: player_uuid,
       playerN: player_n,
       nPlayers: n_players,
       timeLimit: time_limit,
@@ -113,7 +115,7 @@ class Game extends Component {
     window.history.pushState({ gameUuid: game_uuid },
       'Literature',
       '/game/' + game_uuid);
-    if (!payload.success) {
+    if (player_n === -1) {
       console.log('All seats are full in the room');
     }
   }
@@ -208,11 +210,19 @@ class Game extends Component {
     } else {
       ws_scheme = "ws://"
     };
-    let receiver = new window.ReconnectingWebSocket(
-      ws_scheme + window.location.host + "/receive"
+    const queryParams = new URLSearchParams(window.location.search);
+    const pathParams = window.location.pathname.split('/');
+    const player_uuid = localStorage.getItem(PLAYER_UUID);
+    const sendParams = window.jQuery.param({
+      n_players: queryParams.get('n_players'),
+      game_uuid: pathParams[pathParams.length - 1],
+      player_uuid
+    });
+    const receiver = new window.ReconnectingWebSocket(
+      ws_scheme + window.location.host + "/receive?" + sendParams
     );
     receiver.onmessage = this.handleMessage.bind(this);
-    let sender = new window.ReconnectingWebSocket(
+    const sender = new window.ReconnectingWebSocket(
       ws_scheme + window.location.host + "/submit"
     );
     this.setState({

@@ -103,12 +103,21 @@ function _lastMove() {
   }
 }
 
+function _mockParamSerializer(params) {
+  return Object.keys(params).map((k) => {
+    return k + '=' + params[k];
+  }).join('&');
+}
+
 let socketWrapper;
 let container;
 
 beforeEach(() => {
   socketWrapper = new MockSocketWrapper();
   window.ReconnectingWebSocket = socketWrapper.socketClass();
+  window.jQuery = {
+    param: _mockParamSerializer
+  };
   window.cards = {}
   container = document.createElement('div');
   document.body.appendChild(container);

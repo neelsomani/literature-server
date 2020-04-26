@@ -1,22 +1,17 @@
 import json
 import os
-import uuid
 
-from flask import Flask
+from flask import Flask, request
 from flask_sockets import Sockets
 import gevent
 
-from backend import LiteratureAPI
+from backend import RoomManager
 
 app = Flask(__name__, static_folder='build/', static_url_path='/')
 app.debug = 'DEBUG' in os.environ
 
 sockets = Sockets(app)
-
-api = LiteratureAPI(u_id=uuid.uuid4().hex,
-                    logger=app.logger,
-                    n_players=4,
-                    time_limit=30)
+room_manager = RoomManager()
 
 
 @app.route('/')
@@ -53,15 +48,21 @@ def submit(ws):
             continue
 
         app.logger.info('Handling message: {}'.format(msg))
-        api.handle_message(user_msg)
+        room_manager.handle_message(user_msg, app.logger)
 
 
 @sockets.route('/receive')
 def receive(ws):
     """ Register the WebSocket to send messages to the client. """
-    # TODO(@neel): Listen for initial payload from WebSocket,
-    # which should contain either nothing or a game ID.
-    # Initialize new game if nothing. Reconnect as player if UUID included.
-    api.register(ws)
+    game_uuid, player_uuid, n_players = (
+        request.args.get('game_uuid'),
+        request.args.get('player_uuid'),
+        request.args.get('n_players')
+    )
+    room_manager.join_game(client=ws,
+                           logger=app.logger,
+                           player_uuid=player_uuid,
+                           game_uuid=game_uuid,
+                           n_players=n_players)
     while not ws.closed:
         gevent.sleep(0.1)

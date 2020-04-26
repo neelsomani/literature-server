@@ -32,3 +32,5 @@ export const CARD_TO_NUMBER = {
 
 export const CLAIMED = 'claimed';
 export const UNCLAIMED = 'unclaimed';
+
+export const PLAYER_UUID = 'player_uuid';
