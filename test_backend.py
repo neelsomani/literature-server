@@ -55,13 +55,17 @@ def mock_get_game(n_players):
                       turn_picker=lambda: 0)
 
 
+def mock_schedule(interval, func, repeat=False):
+    return lambda: None
+
+
 @pytest.fixture()
 def setup_mocking(monkeypatch):
     # gevent does not execute for tests
     monkeypatch.setattr(gevent, 'spawn', sync_exec)
     monkeypatch.setattr(time, 'time', lambda: 0)
     monkeypatch.setattr(literature, 'get_game', mock_get_game)
-    monkeypatch.setattr(util, 'schedule', lambda i, f, repeat=False: None)
+    monkeypatch.setattr(util, 'schedule', mock_schedule)
 
 
 @pytest.fixture()
@@ -240,7 +244,7 @@ def test_game_complete(monkeypatch, initialized_room):
     assert msg['action'] == COMPLETE
 
 
-def test_rooms(monkeypatch, setup_mocking):
+def test_rooms(setup_mocking):
     rm = RoomManager(logging.getLogger(__name__))
     new_room_client = MockClient()
     rm.join_game(new_room_client,
@@ -288,17 +292,13 @@ def test_room_deletion(monkeypatch, setup_mocking):
     assert len(rm.games) == 0
 
 
-def _broken_send(_):
-    raise AssertionError('closed')
-
-
-def test_bot_moves(monkeypatch, initialized_room):
+def test_bot_moves(initialized_room):
     api, clients = initialized_room['api'], initialized_room['clients']
     assert len(api.game.actual_possessions) == 0
     # Turn player 0 into a bot by breaking the WebSocket
     for c in clients:
         if c.messages[0]['payload']['player_n'] == 0:
-            c.send = _broken_send
+            c.send = util.BotClient.send
     p0_key = _get_p0_key(clients)
     api.handle_message({
         'action': MOVE,
@@ -312,3 +312,21 @@ def test_bot_moves(monkeypatch, initialized_room):
     assert len(api.game.actual_possessions) == 1
     api.execute_bot_moves()
     assert len(api.game.actual_possessions) == 2
+
+
+def test_start_game(api):
+    c = MockClient()
+    api.register_new_player(c)
+    assert api.current_players == 1
+    api.handle_message({
+        'action': START_GAME,
+        'payload': {}
+    })
+    assert api.current_players == 1
+    api.handle_message({
+        'action': START_GAME,
+        'payload': {
+            'key': c.messages[0]['payload']['player_uuid']
+        }
+    })
+    assert api.current_players == 4

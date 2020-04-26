@@ -133,6 +133,7 @@ class LiteratureAPI:
         self.move_timestamp = current_time
         self.time_limit = time_limit
         self.logger.info('Initialized game {}'.format(game_uuid))
+        self.stop_bots = lambda: None
 
     def register_new_player(self, client):
         """ Register a new user for this game. """
@@ -201,11 +202,19 @@ class LiteratureAPI:
         for user in self.users.values():
             gevent.spawn(self._send, user.socket, message)
 
+    def _fill_bots(self, message):
+        """ Fill the remaining players with bots. """
+        if message.get('key') not in self.users:
+            return
+        for _ in range(self.n_players - self.current_players):
+            self.register_new_player(util.BotClient())
+
     def handle_message(self, message):
         action_map = {
             CLAIM: self._claim,
             MOVE: self._move,
-            SWITCH_TEAM: self._switch_team
+            SWITCH_TEAM: self._switch_team,
+            START_GAME: self._fill_bots
         }
         fn = action_map.get(message['action'])
         if fn is None:
@@ -358,8 +367,9 @@ class LiteratureAPI:
             })
         })
         self._send_hands()
-        util.schedule(BOT_SECOND_DELAY,
-                      self.execute_bot_moves)
+        self.stop_bots()
+        self.stop_bots = util.schedule(BOT_SECOND_DELAY,
+                                       self.execute_bot_moves)
 
     def _move(self, payload):
         """
@@ -446,8 +456,9 @@ class LiteratureAPI:
                     'turn': self.game.turn.unique_id
                 })
             })
-            util.schedule(BOT_SECOND_DELAY,
-                          self.execute_bot_moves)
+            self.stop_bots()
+            self.stop_bots = util.schedule(BOT_SECOND_DELAY,
+                                           self.execute_bot_moves)
             return
 
         last_move, move_success = (
@@ -464,8 +475,9 @@ class LiteratureAPI:
                 'success': move_success
             })
         })
-        util.schedule(BOT_SECOND_DELAY,
-                      self.execute_bot_moves)
+        self.stop_bots()
+        self.stop_bots = util.schedule(BOT_SECOND_DELAY,
+                                       self.execute_bot_moves)
 
     def _send_hands(self):
         """

@@ -12,3 +12,9 @@ def schedule(interval, func, repeat=False):
                 stopped.set()
     Thread(target=loop).start()
     return stopped.set
+
+
+class BotClient:
+    """ A class to represent a bot user. """
+    def send(self, _):
+        raise AssertionError('closed')
