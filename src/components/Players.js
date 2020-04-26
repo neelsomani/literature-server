@@ -12,7 +12,7 @@ export default class Players extends Component {
                     showModal={this.props.showModal}
                     turn={this.props.turn}
                     playerN={p}
-                    playerName={this.props.playerNames[p.toString()]}
+                    playerName={(this.props.playerNames || {})[p.toString()]}
                     nCards={(this.props.nCards || {})[p]} />)}
         </div>;
     }

@@ -198,8 +198,8 @@ class Game extends Component {
     if (turn !== this.state.playerN) this.hideMakeMoveModal();
   }
 
-  playerNames({ playerNames }) {
-    this.setState({ playerNames });
+  playerNames(payload) {
+    this.setState({ playerNames: payload.names });
   }
 
   handleMessage(message) {
@@ -245,6 +245,7 @@ class Game extends Component {
     const player_uuid = localStorage.getItem(PLAYER_UUID);
     const sendParams = window.jQuery.param({
       n_players: queryParams.get('n_players'),
+      username: queryParams.get('username'),
       game_uuid: pathParams[pathParams.length - 1],
       player_uuid
     });
@@ -293,6 +294,7 @@ class Game extends Component {
           })}
           turn={this.state.turn}
           gameUuid={this.state.gameUuid}
+          playerNames={this.state.playerNames}
           playerN={this.state.playerN} />
         <CardGroup
           handClass='Player-hand'
