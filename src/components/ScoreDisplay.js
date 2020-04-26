@@ -30,6 +30,7 @@ export default class ScoreDisplay extends Component {
                         <tr key={s.className + '-container'}>
                             <td>
                                 <img
+                                    alt={s.className}
                                     src={s.icon}
                                     height={15}
                                     width={15} />

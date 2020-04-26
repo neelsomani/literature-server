@@ -1,0 +1,22 @@
+.CreateGameParent {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.CreateGameBox {
+  border: 1px solid black;
+  background-color: white;
+  padding: 5%;
+  width: 50%;
+  text-align: center;
+}
+
+.CreateGameButton {
+  color: #10104a;
+}

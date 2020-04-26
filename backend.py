@@ -70,7 +70,8 @@ class LiteratureAPI:
             'n_players': self.n_players,
             'time_limit': self.time_limit,
             'player_n': player_n,
-            'uuid': u_id
+            'uuid': u_id,
+            'game_uuid': self.u_id
         })
         gevent.spawn(self._send, client, {
             'action': REGISTER,

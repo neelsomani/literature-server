@@ -37,18 +37,23 @@ export default class Timer extends Component {
         const timeRemaining = this.timeRemaining()
         const img = [PlayerEvenIcon, PlayerOddIcon][this.props.playerN % 2]
         const icon = (
-            <span style={{ paddingLeft: '10px', paddingRight: '10px' }}>
-                <img src={img} height={15} width={15} /> Player {this.props.playerN}
+            <span style={{ paddingLeft: '10px' }}>
+                <img
+                    src={img}
+                    height={15}
+                    width={15}
+                    alt='Team Icon' /> Player {this.props.playerN}
             </span>
         )
         return <div className='Timer'>
-            {timeRemaining} second{(timeRemaining != 1) && 's'} //
-            {(this.props.playerN != -1)
+            {timeRemaining} second{(timeRemaining !== 1) && 's'} {'//'}
+            {((this.props.playerN !== -1)
                 && this.props.playerN !== undefined
-                && icon
+                && icon)
                 || ' Visitor'}
-            {(this.props.turn !== undefined && this.props.playerN == this.props.turn)
-                && '// Click a player from the opposite team to request a card'}
+            {((this.props.turn !== undefined && this.props.playerN === this.props.turn)
+                && ' // Click a player from the opposite team to request a card')
+                || ' // Game Code: ' + this.props.gameUuid}
         </div>
     }
 }

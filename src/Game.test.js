@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import App from './App';
+import Game from './views/Game';
 
 const PLAYER_KEY = '123';
 window.HTMLMediaElement.prototype.play = () => { };
@@ -112,7 +112,7 @@ beforeEach(() => {
   window.cards = {}
   container = document.createElement('div');
   document.body.appendChild(container);
-  ReactDOM.render(<App />, container);
+  ReactDOM.render(<Game />, container);
 });
 
 afterEach(() => {

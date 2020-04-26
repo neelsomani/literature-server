@@ -7,18 +7,19 @@ export default class CardGroup extends Component {
         // Keep the cards that do not fall under claimed half suits.
         return (cards || []).filter((c) => {
             return Object.keys(claims || {}).filter((h) => {
-                if (claims[h] == CLAIMED) {
-                    if (c[1] == h[1] && SETS[h[0]].includes(c[0])) {
+                if (claims[h] === CLAIMED) {
+                    if (c[1] === h[1] && SETS[h[0]].includes(c[0])) {
                         return true;
                     }
                 }
-            }).length == 0;
+                return false;
+            }).length === 0;
         })
     }
 
     sortCard(a, b) {
         if (CARD_TO_NUMBER[a] > CARD_TO_NUMBER[b]) return 1;
-        else if (CARD_TO_NUMBER[a] == CARD_TO_NUMBER[b]) return 0;
+        else if (CARD_TO_NUMBER[a] === CARD_TO_NUMBER[b]) return 0;
         return -1;
     }
 
