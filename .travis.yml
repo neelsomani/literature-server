@@ -5,5 +5,5 @@ install:
   - pip install -r requirements.txt
   - npm install
 script:
-  - pytest
+  - pytest test_backend.py
   - npm run test
