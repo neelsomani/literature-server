@@ -42,6 +42,16 @@ class Game extends Component {
     this.bell = new Audio(audioUrl);
   }
 
+  startGame() {
+    this.sendMessage({
+      action: 'start_game',
+      game_uuid: this.state.gameUuid,
+      payload: {
+        key: this.state.uuid
+      }
+    })
+  }
+
   makeClaim(possessions) {
     this.hideClaimModal();
     this.sendMessage({
@@ -130,7 +140,8 @@ class Game extends Component {
       success,
       card,
       respondent,
-      interrogator
+      interrogator,
+      score
     } = payload;
     if (turn === this.state.playerN && turn !== this.state.turn)
       this.bell.play();
@@ -141,7 +152,8 @@ class Game extends Component {
       success,
       card,
       respondent,
-      interrogator
+      interrogator,
+      score
     })
     if (turn !== this.state.playerN) this.hideMakeMoveModal();
   }
@@ -290,9 +302,12 @@ class Game extends Component {
           />}
 
         <ScoreDisplay score={this.state.score} />
-        {this.state.playerN !== -1 && <button
+        {this.state.playerN !== -1 && this.state.moveTimestamp && <button
           className='ClaimButton'
           onClick={() => this.setState({ showClaimModal: true })}>Make Claim</button>}
+        {!this.state.moveTimestamp && <button
+          className='BotsButton'
+          onClick={this.startGame.bind(this)}>Fill With Bots</button>}
       </div>
     );
   }

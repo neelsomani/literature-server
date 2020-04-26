@@ -25,7 +25,7 @@ export default class Players extends Component {
             <p style={playerInfo}>
                 Player {this.props.playerN}
             </p>
-            {this.props.nCards &&
+            {(this.props.nCards !== undefined) &&
                 <p style={cardsInfo}>{this.props.nCards} cards</p>}
         </div >
     }

@@ -343,12 +343,6 @@ class LiteratureAPI:
         _random_card = list(payload['possessions'])[0]
         half_suit = literature.deserialize(_random_card[:-1],
                                            _random_card[-1]).half_suit()
-        score = {
-            t.name.lower():
-                sum(self.game.claims[literature.HalfSuit(h, s)] == t
-                    for h in literature.Half for s in literature.Suit)
-            for t in literature.Team
-        }
         self._send_all({
             'action': CLAIM,
             'payload': self._with_player_info({
@@ -362,8 +356,7 @@ class LiteratureAPI:
                 'truth': {
                     c.serialize(): p.unique_id
                     for c, p in self.game.actual_possessions[half_suit].items()
-                },
-                'score': score
+                }
             })
         })
         self._send_hands()
@@ -421,13 +414,20 @@ class LiteratureAPI:
 
     def _with_player_info(self, payload):
         """
-        Add the `move_timestamp` and `n_cards` to the dictionary.
+        Add the `move_timestamp`, `score`, and `n_cards` to the dictionary.
         """
+        score = {
+            t.name.lower():
+                sum(self.game.claims[literature.HalfSuit(h, s)] == t
+                    for h in literature.Half for s in literature.Suit)
+            for t in literature.Team
+        }
         payload.update({
             'move_timestamp': self.move_timestamp,
             'n_cards': {
                 i.unique_id: i.unclaimed_cards() for i in self.game.players
-            }
+            },
+            'score': score
         })
         return payload
 
@@ -442,6 +442,7 @@ class LiteratureAPI:
         - `card`
         - `success`
         - `turn`
+        - `score`
         - `move_timestamp`
         - `n_cards`
 
