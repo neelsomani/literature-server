@@ -82,7 +82,7 @@ class RoomManager:
 
     def delete_unused_rooms(self):
         """ Delete rooms that have not executed a move in the last
-        10 minutes. """
+        `DELETE_ROOM_AFTER_MIN` minutes. """
         for g in list(self.games.keys()):
             if self.games[g].last_executed_move \
                     + self.DELETE_ROOMS_AFTER_MIN * 60 <= time.time():
@@ -142,6 +142,7 @@ class LiteratureAPI:
         self.logger = logger
         self.n_players = n_players
         self.current_players = 0
+        self.player_names = {}
         # `last_executed_move` is the timestamp of the last executed move,
         # used to determine if this game is inactive.
         current_time = time.time()
@@ -174,19 +175,24 @@ class LiteratureAPI:
         Send the client the info for the specified `player_uuid`.
         The `player_uuid` must already be present in `self.players`.
         """
+        player_n = self.users[player_uuid].player_n
         payload = {
             'n_players': self.n_players,
             'time_limit': self.time_limit,
-            'player_n': self.users[player_uuid].player_n,
+            'player_n': player_n,
             'player_uuid': player_uuid,
-            'game_uuid': self.uuid
+            'game_uuid': self.uuid,
+            'player_names': self.player_names
         }
         gevent.spawn(self._send, self.users[player_uuid].socket, {
             'action': REGISTER,
             'payload': payload
         })
         self.logger.info('Sent registration to user {}'.format(player_uuid))
-        self._send_player_names()
+        username = self.users[player_uuid].username
+        if self.player_names.get(player_n) != username:
+            self.player_names[player_n] = username
+            self._send_player_names()
 
         if self.current_players == self.n_players:
             self.logger.info('Received {} players for game {}'.format(
@@ -214,26 +220,26 @@ class LiteratureAPI:
                 if self.users[player_uuid].socket == client:
                     u = self.users[player_uuid]
                     u.connected = False
-                    self.logger.info('Player {} is disconnected from game {}'
-                                     .format(player_uuid, self.uuid))
-                    self._send_player_names()
+                    if self.player_names.get(u.player_n) != u.username:
+                        self.logger.info(
+                            'Player {} is disconnected from game {}'
+                            .format(player_uuid, self.uuid))
+                        self.player_names[u.player_n] = u.username
+                        self._send_player_names()
 
-    def _send_all(self, message, exclude_bots=False):
+    def _send_all(self, message):
         """ Send a message to all clients. """
         for user in self.users.values():
-            if exclude_bots and not user.connected:
-                continue
             gevent.spawn(self._send, user.socket, message)
 
     def _send_player_names(self):
         """ Send the players names to all players. """
-        names = {u.player_n: u.username for u in self.users.values()}
         self._send_all({
             'action': PLAYER_NAMES,
             'payload': {
-                'names': names
+                'names': self.player_names
             }
-        }, exclude_bots=True)
+        })
 
     def _fill_bots(self, message):
         """ Fill the remaining players with bots. """
@@ -262,10 +268,10 @@ class LiteratureAPI:
 
     def _move_if_possible(self, user, use_all_knowledge):
         """
-        Return a list of valid Moves for this User.
+        Return a valid Move for this User.
 
         If `use_all_knowledge` is True, then only return moves that could
-        possibly be successful.
+        possibly be successful. If it's not possible, return None.
         """
         player = self.game.players[user.player_n]
         moves = []
@@ -280,8 +286,9 @@ class LiteratureAPI:
                                     literature.Card.Name(r, s),
                                     use_all_knowledge)
             ])
-        if len(moves) != 0:
-            return moves[int(random.random() * len(moves))]
+        if len(moves) == 0:
+            return None
+        return moves[int(random.random() * len(moves))]
 
     def execute_bot_moves(self):
         """
@@ -330,9 +337,12 @@ class LiteratureAPI:
         if not bot.connected:
             self.logger.info('Executing move for bot {}'.format(current_uuid))
             move = self._move_if_possible(user=bot, use_all_knowledge=True)
-            if not move:
+            if move is None:
                 move = self._move_if_possible(user=bot,
                                               use_all_knowledge=False)
+                if move is None:
+                    self.logger.exception('There was no valid bot move')
+                    return
             self.handle_message({
                 'action': MOVE,
                 'payload': {

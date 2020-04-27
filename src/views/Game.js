@@ -21,8 +21,6 @@ import './Game.css';
 class Game extends Component {
   constructor(props) {
     super(props);
-    const playerNames = {};
-    [...Array(8).keys()].forEach((p) => playerNames[p] = 'Player ' + p);
     this.state = {
       uuid: '',
       gameUuid: '',
@@ -38,10 +36,16 @@ class Game extends Component {
         odd: 0,
         discard: 0
       },
-      playerNames
+      playerNames: this.defaultNames()
     };
     const audioUrl = process.env.PUBLIC_URL + '/bell.mp3';
     this.bell = new Audio(audioUrl);
+  }
+
+  defaultNames() {
+    const playerNames = {};
+    [...Array(8).keys()].forEach((p) => playerNames[p] = 'Player ' + p);
+    return playerNames;
   }
 
   allUnclaimed() {
@@ -122,7 +126,8 @@ class Game extends Component {
       player_n,
       n_players,
       time_limit,
-      game_uuid
+      game_uuid,
+      player_names
     } = payload;
     localStorage.setItem(PLAYER_UUID, player_uuid);
     this.setState({
@@ -142,7 +147,8 @@ class Game extends Component {
       card: undefined,
       respondent: undefined,
       interrogator: undefined,
-      moveTimestamp: undefined
+      moveTimestamp: undefined,
+      playerNames: { ...this.defaultNames(), ...player_names }
     });
     window.history.pushState({ gameUuid: game_uuid },
       'Literature',
