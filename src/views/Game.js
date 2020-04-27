@@ -14,7 +14,8 @@ import {
   UNCLAIMED,
   SET_NAME_MAP,
   PLAYER_UUID,
-  PLAYER_NAME
+  PLAYER_NAME,
+  PING_PONG_INTERVAL_MS
 } from '../components/Constants';
 import './Game.css';
 
@@ -40,6 +41,16 @@ class Game extends Component {
     };
     const audioUrl = process.env.PUBLIC_URL + '/bell.mp3';
     this.bell = new Audio(audioUrl);
+    setInterval(this.pingPong.bind(this), PING_PONG_INTERVAL_MS)
+  }
+
+  pingPong() {
+    this.sendMessage({
+      'action': 'ping_pong',
+      'payload': {
+        'key': this.state.uuid
+      }
+    })
   }
 
   defaultNames() {

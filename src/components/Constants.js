@@ -35,3 +35,5 @@ export const UNCLAIMED = 'unclaimed';
 
 export const PLAYER_UUID = 'player_uuid';
 export const PLAYER_NAME = 'player_name';
+
+export const PING_PONG_INTERVAL_MS = 5000
