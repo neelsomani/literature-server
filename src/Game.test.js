@@ -38,7 +38,15 @@ function initSixPlayerGame() {
         player_uuid: PLAYER_KEY,
         player_n: 0,
         n_players: 6,
-        time_limit: 30
+        time_limit: 30,
+        player_names: {
+          '0': 'Jack',
+          '1': 'Mary',
+          '2': 'Player 2',
+          '3': 'Player 3',
+          '4': 'Player 4',
+          '5': 'Player 5'
+        }
       }
     }));
 }
@@ -143,7 +151,7 @@ it('handles visitor correctly', () => {
   expect(container.getElementsByClassName('Player')).toHaveLength(4);
 });
 
-it('handles player correctly', () => {
+it('handles hand correctly', () => {
   initSixPlayerGame();
   expect(container.getElementsByClassName('Player')).toHaveLength(5);
   socketWrapper.socket.onmessage(serialize(
@@ -152,11 +160,6 @@ it('handles player correctly', () => {
       payload: ['AC', '2C']
     }));
   expect(container.getElementsByClassName('card')).toHaveLength(2);
-  socketWrapper.socket.onmessage(serialize(_lastMove()));
-  expect(container.getElementsByClassName('MoveDisplay')[0]).toHaveProperty(
-    'innerHTML',
-    'Failure: Player 1 KC from Player 0'
-  );
 });
 
 it('handles making moves correctly', () => {
@@ -200,4 +203,22 @@ it('handles claims correctly', () => {
     'innerHTML', '2');
   expect(container.getElementsByClassName('DiscardScore')[0]).toHaveProperty(
     'innerHTML', '3');
+})
+
+it('handles resetting game', () => {
+  initSixPlayerGame();
+  expect(container.getElementsByClassName('MoveDisplay')[0]).toHaveProperty(
+    'innerHTML',
+    'No move has been executed yet.'
+  );
+  socketWrapper.socket.onmessage(serialize(_lastMove()));
+  expect(container.getElementsByClassName('MoveDisplay')[0]).toHaveProperty(
+    'innerHTML',
+    'Failure: Mary KC from Jack'
+  );
+  initSixPlayerGame();
+  expect(container.getElementsByClassName('MoveDisplay')[0]).toHaveProperty(
+    'innerHTML',
+    'No move has been executed yet.'
+  );
 })

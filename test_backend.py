@@ -182,11 +182,10 @@ def _filter_name_updates(messages):
 def test_make_move(initialized_room):
     api, clients = initialized_room['api'], initialized_room['clients']
     assert len(_filter_name_updates(clients[0].messages)) == 3
-    p0_key = _get_p0_key(clients)
     api.handle_message({
         'action': MOVE,
         'payload': {
-            'key': p0_key,
+            'key': _get_p0_key(clients),
             'respondent': 1,
             'card': MISSING_CARD.serialize()
         }
@@ -202,14 +201,13 @@ def test_make_move(initialized_room):
 
 def test_claim(initialized_room):
     api, clients = initialized_room['api'], initialized_room['clients']
-    p0_key = _get_p0_key(clients)
     claim = api.game.players[0].evaluate_claims()[
         HalfSuit(Half.MINOR, Suit.DIAMONDS)
     ]
     api.handle_message({
         'action': CLAIM,
         'payload': {
-            'key': p0_key,
+            'key': _get_p0_key(clients),
             'possessions': {
                 c.serialize(): p.unique_id for c, p in claim.items()
             }
@@ -313,11 +311,10 @@ def test_bot_moves(initialized_room):
     for c in clients:
         if c.messages[0]['payload']['player_n'] == 0:
             c.send = util.BotClient.send
-    p0_key = _get_p0_key(clients)
     api.handle_message({
         'action': MOVE,
         'payload': {
-            'key': p0_key,
+            'key': _get_p0_key(clients),
             'respondent': 1,
             'card': MISSING_CARD.serialize()
         }
@@ -344,6 +341,28 @@ def test_start_game(api):
         }
     })
     assert api.current_players == 4
+
+
+def test_name_updates(initialized_room):
+    api, clients = initialized_room['api'], initialized_room['clients']
+    for c in clients:
+        names = _action_from_messages(c.messages[-3:], PLAYER_NAMES)
+        for k, n in names['names'].items():
+            assert n == 'Player {}'.format(k)
+    clients[1].send = util.BotClient.send
+    api.handle_message({
+        'action': MOVE,
+        'payload': {
+            'key': _get_p0_key(clients),
+            'respondent': 1,
+            'card': MISSING_CARD.serialize()
+        }
+    })
+    for i, c in enumerate(clients):
+        if i == 1:
+            continue
+        names = _action_from_messages(c.messages[-3:], PLAYER_NAMES)
+        assert names['names']['1'] == 'Bot 1'
 
 
 def test_user_object():

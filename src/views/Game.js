@@ -13,17 +13,14 @@ import {
   CLAIMED,
   UNCLAIMED,
   SET_NAME_MAP,
-  PLAYER_UUID
+  PLAYER_UUID,
+  PLAYER_NAME
 } from '../components/Constants';
 import './Game.css';
 
 class Game extends Component {
   constructor(props) {
     super(props);
-    const claims = {};
-    SET_INDICATORS.forEach((s) => claims[s] = UNCLAIMED);
-    const playerNames = {};
-    [...Array(8).keys()].forEach((p) => playerNames[p] = 'Player ' + p);
     this.state = {
       uuid: '',
       gameUuid: '',
@@ -32,17 +29,29 @@ class Game extends Component {
       showMakeMoveModal: false,
       showClaimModal: false,
       showFullClaim: false,
-      claims,
+      claims: this.allUnclaimed(),
       lastClaim: {},
       score: {
         even: 0,
         odd: 0,
         discard: 0
       },
-      playerNames
+      playerNames: this.defaultNames()
     };
     const audioUrl = process.env.PUBLIC_URL + '/bell.mp3';
     this.bell = new Audio(audioUrl);
+  }
+
+  defaultNames() {
+    const playerNames = {};
+    [...Array(8).keys()].forEach((p) => playerNames[p] = 'Player ' + p);
+    return playerNames;
+  }
+
+  allUnclaimed() {
+    const claims = {};
+    SET_INDICATORS.forEach((s) => claims[s] = UNCLAIMED);
+    return claims;
   }
 
   startGame() {
@@ -117,7 +126,8 @@ class Game extends Component {
       player_n,
       n_players,
       time_limit,
-      game_uuid
+      game_uuid,
+      player_names
     } = payload;
     localStorage.setItem(PLAYER_UUID, player_uuid);
     this.setState({
@@ -125,7 +135,20 @@ class Game extends Component {
       playerN: player_n,
       nPlayers: n_players,
       timeLimit: time_limit,
-      gameUuid: game_uuid
+      gameUuid: game_uuid,
+      claims: this.allUnclaimed(),
+      lastClaim: {},
+      score: {
+        even: 0,
+        odd: 0,
+        discard: 0
+      },
+      success: undefined,
+      card: undefined,
+      respondent: undefined,
+      interrogator: undefined,
+      moveTimestamp: undefined,
+      playerNames: { ...this.defaultNames(), ...player_names }
     });
     window.history.pushState({ gameUuid: game_uuid },
       'Literature',
@@ -243,9 +266,12 @@ class Game extends Component {
     const queryParams = new URLSearchParams(window.location.search);
     const pathParams = window.location.pathname.split('/');
     const player_uuid = localStorage.getItem(PLAYER_UUID);
+    const storedUsername = localStorage.getItem(PLAYER_NAME);
+    const username = queryParams.get('username') || storedUsername
+    localStorage.setItem(PLAYER_NAME, username || '');
     const sendParams = window.jQuery.param({
       n_players: queryParams.get('n_players'),
-      username: queryParams.get('username'),
+      username,
       game_uuid: pathParams[pathParams.length - 1],
       player_uuid
     });
