@@ -47,6 +47,7 @@ class Game extends Component {
   pingPong() {
     this.sendMessage({
       'action': 'ping_pong',
+      'game_uuid': this.state.gameUuid,
       'payload': {
         'key': this.state.uuid
       }
@@ -256,6 +257,8 @@ class Game extends Component {
         break;
       case 'player_names':
         this.playerNames(data.payload)
+        break;
+      case 'ping_pong':
         break;
       default:
         throw new Error('Unhandled action: ' + data.action);
