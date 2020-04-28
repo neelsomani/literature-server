@@ -174,6 +174,8 @@ class LiteratureAPI:
         """
         Send the client the info for the specified `player_uuid`.
         The `player_uuid` must already be present in `self.players`.
+
+        Send the player names if they have updated.
         """
         player_n = self.users[player_uuid].player_n
         payload = {
@@ -191,7 +193,8 @@ class LiteratureAPI:
         self.logger.info('Sent registration to user {}'.format(player_uuid))
         username = self.users[player_uuid].username
         if self.player_names.get(player_n) != username:
-            self.player_names[player_n] = username
+            if player_n != VISITOR_PLAYER_ID:
+                self.player_names[player_n] = username
             self._send_player_names()
 
         if self.current_players == self.n_players:
@@ -224,7 +227,8 @@ class LiteratureAPI:
                         self.logger.info(
                             'Player {} is disconnected from game {}'
                             .format(player_uuid, self.uuid))
-                        self.player_names[u.player_n] = u.username
+                        if u.player_n != VISITOR_PLAYER_ID:
+                            self.player_names[u.player_n] = u.username
                         self._send_player_names()
 
     def _send_all(self, message):
@@ -250,12 +254,19 @@ class LiteratureAPI:
                 util.BotClient(),
                 'Bot {}'.format(self.current_players + i))
 
+    def _ping_pong(self, payload):
+        user = self.users[payload['key']]
+        gevent.spawn(self._send, user.socket, {
+            'action': PING_PONG
+        })
+
     def handle_message(self, message):
         action_map = {
             CLAIM: self._claim,
             MOVE: self._move,
             SWITCH_TEAM: self._switch_team,
-            START_GAME: self._fill_bots
+            START_GAME: self._fill_bots,
+            PING_PONG: self._ping_pong
         }
         fn = action_map.get(message['action'])
         if fn is None:
