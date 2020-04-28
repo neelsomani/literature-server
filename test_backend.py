@@ -104,11 +104,20 @@ def test_registration(api):
     assert len(c.messages) == 2
     msg = _action_from_messages(c.messages, REGISTER)
     assert msg['player_n'] != VISITOR_PLAYER_ID
-    assert 'player_uuid' in msg
+    player_uuid = msg['player_uuid']
+    game_uuid = msg['game_uuid']
     assert msg['time_limit'] == TIME_LIMIT
     assert msg['n_players'] == N_PLAYERS
     msg = _action_from_messages(c.messages, PLAYER_NAMES)
     assert msg['names']['0'] == MOCK_NAME
+    api.handle_message({
+        'action': PING_PONG,
+        'game_uuid': game_uuid,
+        'payload': {
+            'key': player_uuid
+        }
+    })
+    assert c.messages[-1]['action'] == PING_PONG
 
 
 def _action_from_messages(messages, action):
