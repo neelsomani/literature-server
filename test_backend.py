@@ -143,6 +143,8 @@ def test_full_room(initialized_room):
     # The visitor should still receive the last move
     for action in [REGISTER, LAST_MOVE, PLAYER_NAMES]:
         _action_from_messages(c.messages, action)
+    with pytest.raises(ValueError):
+        _action_from_messages(c.messages, HAND)
 
 
 def test_switching_turn(monkeypatch, initialized_room):

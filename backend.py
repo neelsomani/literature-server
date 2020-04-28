@@ -543,7 +543,8 @@ class LiteratureAPI:
         The payload will be a list with the serialized representation
         of each card.
         """
-        for user in [u for u in self.users.values() if u.connected]:
+        for user in [u for u in self.users.values()
+                     if u.connected and u.player_n != -1]:
             idx = user.player_n
             player = self.game.players[idx]
             gevent.spawn(self._send, user.socket, {
