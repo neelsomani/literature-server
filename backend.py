@@ -14,7 +14,9 @@ VISITOR_PLAYER_ID = -1
 
 class RoomManager:
     VALID_N_PLAYERS = {4, 6, 8}
-    DEFAULT_N_PLAYERS = 4
+    VALID_TIME_LIMIT = {60, 120, 180}
+    DEFAULT_N_PLAYERS = 6
+    DEFAULT_TIME_LIMIT = None
     DELETE_ROOMS_AFTER_MIN = 10
 
     def __init__(self, logger):
@@ -38,12 +40,25 @@ class RoomManager:
             logger.info('Could not parse n_players: {}'.format(n_players))
         return cls.DEFAULT_N_PLAYERS
 
+    @classmethod
+    def _parse_time_limit(cls, time_limit, logger):
+        if time_limit == 'None':
+            return None
+        try:
+            n = int(time_limit)
+            if n in cls.VALID_TIME_LIMIT:
+                return n
+        except (TypeError, ValueError):
+            logger.info('Could not parse time_limit: {}'.format(time_limit))
+        return cls.DEFAULT_TIME_LIMIT
+
     def join_game(self,
                   client,
                   player_uuid=None,
                   game_uuid=None,
                   n_players=DEFAULT_N_PLAYERS,
-                  username=None):
+                  username=None,
+                  time_limit=DEFAULT_TIME_LIMIT):
         """
         Register a WebSocket connection for updates.
 
@@ -52,11 +67,12 @@ class RoomManager:
         - player_uuid
         - n_players
         - username
+        - time_limit
 
         Order of priorities:
         1. Reconnect as player `player_uuid` to game `game_uuid` if possible.
         2. Attempt connecting to `game_uuid` as any player.
-        3. Create new game with `n_players`.
+        3. Create new game with `n_players` and `time_limit`.
         """
         if game_uuid in self.games:
             if player_uuid in self.games[game_uuid].users:
@@ -73,11 +89,12 @@ class RoomManager:
             return
 
         n_players = RoomManager._parse_n_players(n_players, self.logger)
+        time_limit = RoomManager._parse_time_limit(time_limit, self.logger)
         game_uuid = _uuid(self.games)
         self.games[game_uuid] = LiteratureAPI(game_uuid=game_uuid,
                                               logger=self.logger,
                                               n_players=n_players,
-                                              time_limit=60)
+                                              time_limit=time_limit)
         self.games[game_uuid].register_new_player(client, username)
 
     def delete_unused_rooms(self):
@@ -123,7 +140,7 @@ class LiteratureAPI:
                  game_uuid,
                  logger,
                  n_players,
-                 time_limit=60):
+                 time_limit=None):
         """
         Parameters
         ----------
@@ -133,8 +150,8 @@ class LiteratureAPI:
             Logger for debug messages
         n_players : int
             Number of players for the game
-        time_limit : int
-            Number of seconds between each turn. Defaults to 60.
+        time_limit : Optional[int]
+            Number of seconds between each turn. Defaults to None.
         """
         self.uuid = game_uuid
         self.users = {}

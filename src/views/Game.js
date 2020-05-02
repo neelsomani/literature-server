@@ -279,15 +279,16 @@ class Game extends Component {
     };
     const queryParams = new URLSearchParams(window.location.search);
     const pathParams = window.location.pathname.split('/');
-    const player_uuid = localStorage.getItem(PLAYER_UUID);
+    const playerUuid = localStorage.getItem(PLAYER_UUID);
     const storedUsername = localStorage.getItem(PLAYER_NAME);
     const username = queryParams.get('username') || storedUsername
     localStorage.setItem(PLAYER_NAME, username || '');
     const sendParams = window.jQuery.param({
       n_players: queryParams.get('n_players'),
+      time_limit: queryParams.get('time_limit'),
       username,
       game_uuid: pathParams[pathParams.length - 1],
-      player_uuid
+      player_uuid: playerUuid
     });
     const receiver = new window.ReconnectingWebSocket(
       ws_scheme + window.location.host + "/receive?" + sendParams
