@@ -58,16 +58,18 @@ def submit(ws):
 @sockets.route('/receive')
 def receive(ws):
     """ Register the WebSocket to send messages to the client. """
-    game_uuid, player_uuid, n_players, username = (
+    game_uuid, player_uuid, n_players, username, time_limit = (
         request.args.get('game_uuid'),
         request.args.get('player_uuid'),
         request.args.get('n_players'),
-        request.args.get('username')
+        request.args.get('username'),
+        request.args.get('time_limit')
     )
     room_manager.join_game(client=ws,
                            player_uuid=player_uuid,
                            game_uuid=game_uuid,
                            n_players=n_players,
-                           username=username)
+                           username=username,
+                           time_limit=time_limit)
     while not ws.closed:
         gevent.sleep(0.1)

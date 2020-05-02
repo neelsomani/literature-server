@@ -31,12 +31,23 @@ class CreateRoom extends Component {
                                 ref={(input) => this.username = input} />
                         </div>
                         <div style={{ paddingBottom: '30px' }}>
-                            New Game:{' '}
-                            <select id='n_players' name='n_players'>
-                                <option value="4">4 Players</option>
-                                <option value="6">6 Players</option>
-                                <option value="8">8 Players</option>
-                            </select>
+                            <div>
+                                New Game:{' '}
+                                <select id='n_players' name='n_players'>
+                                    <option value="4">4 Players</option>
+                                    <option value="6">6 Players</option>
+                                    <option value="8">8 Players</option>
+                                </select>
+                            </div>
+                            <div>
+                                Time Limit:{' '}
+                                <select id='time_limit' name='time_limit'>
+                                    <option value="60">60 seconds</option>
+                                    <option value="120">120 seconds</option>
+                                    <option value="180">180 seconds</option>
+                                    <option value="None">None</option>
+                                </select>
+                            </div>
                             <button>Create</button>
                         </div>
                     </form>
