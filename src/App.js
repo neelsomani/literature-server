@@ -3,11 +3,13 @@ import Game from './views/Game';
 import CreateRoom from './views/CreateRoom';
 import { BrowserRouter, Route } from 'react-router-dom';
 
+import './App.css';
+
 class App extends Component {
     render() {
         return (
             <BrowserRouter>
-                <div>
+                <div className='Body'>
                     <Route exact={true} path='/' render={() => (
                         <div className='App'>
                             <CreateRoom />

@@ -342,6 +342,13 @@ class Game extends Component {
           suitClass='vhand-compact'
           cards={this.state.hand}
           claims={this.state.claims} />
+        <ScoreDisplay score={this.state.score} />
+        {this.state.playerN !== -1 && this.state.moveTimestamp && <button
+          className='btn btn-secondary ClaimButton'
+          onClick={() => this.setState({ showClaimModal: true })}>Make Claim</button>}
+        {!this.state.moveTimestamp && <button
+          className='btn btn-secondary BotsButton'
+          onClick={this.startGame.bind(this)}>Fill With Bots</button>}
         {this.state.showMakeMoveModal && <MakeMoveModal
           hand={this.state.hand}
           hideModal={this.hideMakeMoveModal.bind(this)}
@@ -364,14 +371,6 @@ class Game extends Component {
               (this.state.lastClaim.halfSuit || {}).suit}
             hideModal={() => { this.setState({ showFullClaim: false }) }}
           />}
-
-        <ScoreDisplay score={this.state.score} />
-        {this.state.playerN !== -1 && this.state.moveTimestamp && <button
-          className='ClaimButton'
-          onClick={() => this.setState({ showClaimModal: true })}>Make Claim</button>}
-        {!this.state.moveTimestamp && <button
-          className='BotsButton'
-          onClick={this.startGame.bind(this)}>Fill With Bots</button>}
       </div>
     );
   }

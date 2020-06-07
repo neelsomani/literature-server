@@ -89,7 +89,7 @@ export default class SetSelector extends Component {
                             .map((p) =>
                                 <td key={'indicator-' + r + this.suitIndicator + '-' + p}>
                                     <label>{this.radioButton(r + this.suitIndicator, p)}
-                                        {(this.props.playerNames || {})[p.toString()]} </label>
+                                        {' '}{(this.props.playerNames || {})[p.toString()]} </label>
                                 </td>)}
                     </tr>
                 ))}
@@ -99,7 +99,7 @@ export default class SetSelector extends Component {
             {selectors}
             {this.props.makeClaim
                 && <button
-                    className='MakeClaimButton'
+                    className='btn btn-secondary MakeClaimButton'
                     onClick={this.makeClaim.bind(this)}>Claim</button>}
         </div>
     }

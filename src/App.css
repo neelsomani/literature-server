@@ -1,0 +1,13 @@
+.Body {
+  font-family: Circular, BlinkMacSystemFont, Roboto, Helvetica Neue, sans-serif;
+}
+
+.Link {
+  color: black;
+  text-decoration: none;
+}
+
+.Link:hover {
+  color: #484848;
+  text-decoration: underline;
+}
