@@ -7,7 +7,7 @@ class App extends Component {
     render() {
         return (
             <BrowserRouter>
-                <div>
+                <div style={{ fontFamily: 'Circular, BlinkMacSystemFont, Roboto, Helvetica Neue, sans-serif' }}>
                     <Route exact={true} path='/' render={() => (
                         <div className='App'>
                             <CreateRoom />

@@ -16,7 +16,15 @@
 
 .Player {
   width: 100px;
-  height: 100px;
+  padding: 9px;
+  box-shadow: rgba(0, 0, 0, 0.18) 0px 1px 2px;
+  padding-bottom: 0px;
+  border-radius: 5px;
+  background-color: #fff;
+}
+
+.OtherTeamPlayer:hover {
+  border: solid 1px rgb(195, 195, 195);
 }
 
 .MoveDisplay {
@@ -28,7 +36,6 @@
   margin-top: -2em;
   font-size: 2em;
   text-align: center;
-  color: #c0c0c0;
 }
 
 .ClaimDisplay {
@@ -38,20 +45,27 @@
   position: absolute;
   margin-left: -40%;
   font-size: 2em;
-  color: #c0c0c0;
   text-align: center;
 }
 
 .Timer {
-  width: 98%;
+  width: 100%;
   left: 0;
   padding-left: 2%;
   bottom: 0;
   position: absolute;
   background-color: white;
-  font-weight: bold;
+  box-shadow: rgba(0, 0, 0, 0.18) 0px -1px 2px;
   padding-top: 2%;
   padding-bottom: 2%;
+}
+
+.ShowFullClaimLink {
+  text-decoration: none;
+}
+
+.ShowFullClaimLink:hover {
+  text-decoration: none;
 }
 
 .MakeMoveCover, .ClaimCover, .CorrectClaimCover {
@@ -69,6 +83,7 @@
 .CardSelector {
   text-align: center;
   background-color: white;
+  box-shadow: rgba(0, 0, 0, 0.18) 0px 1px 2px;
   border-radius: 10px;
   padding: 1%;
 }
@@ -79,7 +94,8 @@
   bottom: 10%;
   right: 4%;
   padding: 10px;
-  border: 1px solid black;
+  border-radius: 5px;
+  border: 1px solid rgb(211, 211, 211);
 }
 
 .ClaimButton, .BotsButton {

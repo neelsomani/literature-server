@@ -6,16 +6,20 @@ export default class Players extends Component {
     render() {
         const icons = [PlayerEvenIcon, PlayerOddIcon];
         let border = ((this.props.turn === this.props.playerN) && {
-            border: 'solid 3px white'
+            border: 'solid 2px rgb(195, 195, 195)'
         }) || {};
-        const playerInfo = { textAlign: 'center', color: '#c0c0c0' };
+        const playerInfo = { textAlign: 'center' };
         const cardsInfo = {
             textAlign: 'center',
-            color: '#c0c0c0',
             marginTop: '-10px'
         };
+        let playerCls = 'Player';
+        if (this.props.userPlayerN % 2 !== this.props.playerN % 2
+            && this.props.turn == this.props.userPlayerN) {
+            playerCls = playerCls + ' OtherTeamPlayer';
+        }
         return <div
-            className='Player'
+            className={playerCls}
             style={border}
             onClick={() => this.props.showModal(this.props.playerN)}>
             <img
@@ -27,6 +31,6 @@ export default class Players extends Component {
             </p>
             {(this.props.nCards !== undefined) &&
                 <p style={cardsInfo}>{this.props.nCards} cards</p>}
-        </div >
+        </div>
     }
 }
