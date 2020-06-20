@@ -1,0 +1,14 @@
+Adapted from the Wikipedia article for Literature: https://en.wikipedia.org/wiki/Literature_(card_game)#Rules
+
+Literature is a card game played with two teams. The goal of the game is to claim as many "sets" as possible.
+
+A set is A - 6 or 8 - K of a particular suit (8 sets total, and 7's are not included in the game).
+
+You can ask for a card from anyone on the opposing team. If you ask for a card from a set, you must have at least one other card in that set, and you cannot have the card that you are asking for.
+
+* If the other player has the card, they give you the card and your turn continues.
+* Otherwise the turn switches to the player who you asked.
+
+When your team has all of the cards in a set, you "claim" it by stating who has each card. If your team has the cards but you named the people incorrectly, no one gets the point. If a player on the opposite team had a card, the opposite team gets the point.
+
+Additional reading: https://www.pagat.com/quartet/literature.html
