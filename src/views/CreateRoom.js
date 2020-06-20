@@ -21,6 +21,7 @@ class CreateRoom extends Component {
                 <div className='Header'><h1 className='LiteratureHeader'>Literature</h1></div>
                 <div className='CreateGameBox'>
                     <div className='CreateGameForm'>
+                        <a href='/rules.txt'>Rules</a>
                         <form action='/game' method='get'>
                             <div className="form-group">
                                 <label for="username">Username</label>
