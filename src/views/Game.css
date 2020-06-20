@@ -27,25 +27,18 @@
   border: solid 1px rgb(195, 195, 195);
 }
 
-.MoveDisplay {
+.MoveDisplay, .ClaimDisplay {
   width: 80%;
   top: 50%;
   left: 50%;
   position: absolute;
   margin-left: -40%;
-  margin-top: -2em;
   font-size: 2em;
   text-align: center;
 }
 
-.ClaimDisplay {
-  width: 80%;
-  top: 50%;
-  left: 50%;
-  position: absolute;
-  margin-left: -40%;
-  font-size: 2em;
-  text-align: center;
+.MoveDisplay {
+  margin-top: -2em;
 }
 
 .Timer {
@@ -56,8 +49,8 @@
   position: absolute;
   background-color: white;
   box-shadow: rgba(0, 0, 0, 0.18) 0px -1px 2px;
-  padding-top: 2%;
-  padding-bottom: 2%;
+  padding-top: 18px;
+  padding-bottom: 18px;
 }
 
 .ShowFullClaimLink {
@@ -103,4 +96,30 @@
   bottom: 2%;
   right: 2%;
   font-size: large;
+}
+
+@media (max-height: 500px) {
+  .MoveDisplay, .ClaimDisplay {
+    top: 250px;
+  }
+
+  .ScoreDisplay {
+    bottom: inherit;
+    top: 350px;
+  }
+
+  .Player-hand {
+    bottom: inherit;
+    top: 317px;
+  }
+
+  .Timer {
+    bottom: inherit;
+    top: 440px;
+  }
+
+  .ClaimButton, .BotsButton {
+    bottom: inherit;
+    top: 442px;
+  }
 }
