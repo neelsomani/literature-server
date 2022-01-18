@@ -23,3 +23,7 @@ The application will be running at http://localhost:5000.
 
 ## Architecture
 ![Literature server architecture](https://i.imgur.com/QwAif2T.jpg)
+
+## User Interface
+
+<img width="1243" alt="Literature game user interface" src="https://user-images.githubusercontent.com/7029855/149852615-24b15614-dd61-4ec3-9b83-7039fc111fad.png">
