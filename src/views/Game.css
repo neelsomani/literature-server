@@ -1,8 +1,37 @@
+.Player-hand,
+.CardSelector-hand {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+}
+
 .Player-hand {
   bottom: 10%;
   position: absolute;
   width: 100%;
   text-align: center;
+}
+
+.Player-hand .hand,
+.CardSelector-hand .hand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.Player-hand .hand .card,
+.CardSelector-hand .hand .card {
+  width: 72px;
+  max-width: min(16vw, 90px);
+  height: auto;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25));
+  border-radius: 6px;
+  margin-top: -42px;
+}
+
+.Player-hand .hand .card:first-child,
+.CardSelector-hand .hand .card:first-child {
+  margin-top: 0;
 }
 
 .Players {
@@ -79,6 +108,15 @@
   box-shadow: rgba(0, 0, 0, 0.18) 0px 1px 2px;
   border-radius: 10px;
   padding: 1%;
+}
+
+.CardSelector-hand {
+  padding: 12px 0;
+  flex-wrap: wrap;
+}
+
+.CardSelector-hand .hand .card {
+  max-width: min(20vw, 90px);
 }
 
 .ScoreDisplay {

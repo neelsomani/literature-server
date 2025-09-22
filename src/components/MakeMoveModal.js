@@ -38,6 +38,7 @@ export default class MakeMoveModal extends Component {
             }} onClick={this.props.hideModal}></div>
             <div className='CardSelector' style={{ zIndex: 10 }}>
                 <CardGroup
+                    handClass='CardSelector-hand'
                     clickCard={this.props.playCard}
                     suitClass='vhand-compact active-hand'
                     cards={this.state.cards}

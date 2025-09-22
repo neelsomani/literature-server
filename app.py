@@ -2,7 +2,8 @@ import json
 import os
 
 from flask import Flask, request
-from flask_sockets import Sockets
+from flask_sock import Sock
+from simple_websocket import ConnectionClosed
 import gevent
 
 from backend import RoomManager
@@ -11,7 +12,7 @@ import util
 app = Flask(__name__, static_folder='build/', static_url_path='/')
 app.debug = 'DEBUG' in os.environ
 
-sockets = Sockets(app)
+sock = Sock(app)
 room_manager = RoomManager(app.logger)
 util.schedule(RoomManager.DELETE_ROOMS_AFTER_MIN * 60,
               room_manager.delete_unused_rooms,
@@ -35,27 +36,29 @@ def static_file(path):
     return app.send_static_file(path)
 
 
-@sockets.route('/submit')
+@sock.route('/submit')
 def submit(ws):
     """ Receive incoming messages from the client. """
-    while not ws.closed:
-        gevent.sleep(0.1)
-        msg = ws.receive()
-        if not msg:
+    while ws.connected:
+        try:
+            msg = ws.receive()
+        except ConnectionClosed:
+            break
+        if msg is None:
             continue
 
         try:
             user_msg = json.loads(msg)
-        except json.decoder.JSONDecodeError as _:
+        except json.decoder.JSONDecodeError:
             app.logger.exception('Exception in parsing JSON message: {}'
                                  .format(msg))
             continue
 
-        app.logger.info('Handling message: {}'.format(msg))
+        app.logger.info('Handling message: %s', msg)
         room_manager.handle_message(user_msg)
 
 
-@sockets.route('/receive')
+@sock.route('/receive')
 def receive(ws):
     """ Register the WebSocket to send messages to the client. """
     game_uuid, player_uuid, n_players, username, time_limit = (
@@ -71,5 +74,8 @@ def receive(ws):
                            n_players=n_players,
                            username=username,
                            time_limit=time_limit)
-    while not ws.closed:
-        gevent.sleep(0.1)
+    try:
+        while ws.connected:
+            gevent.sleep(0.1)
+    except ConnectionClosed:
+        pass

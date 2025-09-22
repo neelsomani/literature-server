@@ -34,6 +34,7 @@ export default class ClaimModal extends Component {
             }} onClick={this.props.hideModal}></div>
             <div className='CardSelector' style={{ zIndex: 10 }}>
                 {this.state.showSets && <CardGroup
+                    handClass='CardSelector-hand'
                     clickCard={this.selectClaim.bind(this)}
                     suitClass='hhand-compact active-hand'
                     cards={SET_INDICATORS.filter((s) => this.props.claims[s] === UNCLAIMED)} />}

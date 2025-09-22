@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: literature-server
+    env: python
+    plan: free
+    buildCommand: |
+      pip install -r requirements.txt
+      npm install --omit=optional
+      npm run build
+    startCommand: gunicorn -k gevent -b 0.0.0.0:$PORT app:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.3
+      - key: NODE_VERSION
+        value: 16.20.2

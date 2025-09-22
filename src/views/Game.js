@@ -41,7 +41,7 @@ class Game extends Component {
     };
     const audioUrl = process.env.PUBLIC_URL + '/bell.mp3';
     this.bell = new Audio(audioUrl);
-    setInterval(this.pingPong.bind(this), PING_PONG_INTERVAL_MS)
+    this.pingTimer = setInterval(this.pingPong.bind(this), PING_PONG_INTERVAL_MS)
   }
 
   pingPong() {
@@ -267,7 +267,38 @@ class Game extends Component {
 
   sendMessage(payload) {
     console.log('Sending: ' + JSON.stringify(payload))
-    this.state.sender.send(JSON.stringify(payload));
+    const { sender } = this.state;
+    const openState = (typeof WebSocket !== 'undefined' && WebSocket.OPEN !== undefined)
+      ? WebSocket.OPEN
+      : 1;
+    const message = JSON.stringify(payload);
+    if (!sender) {
+      console.warn('WebSocket not available, skipping send', payload.action);
+      return;
+    }
+    if (sender.readyState === openState) {
+      sender.send(message);
+      return;
+    }
+    console.info('WebSocket not ready, queueing action', payload.action);
+    const sendWhenOpen = () => {
+      try {
+        sender.send(message);
+      } catch (err) {
+        console.error('Failed to send queued action', payload.action, err);
+      }
+    };
+    if (typeof sender.addEventListener === 'function') {
+      sender.addEventListener('open', () => sendWhenOpen(), { once: true });
+    } else {
+      const prev = sender.onopen;
+      sender.onopen = (event) => {
+        if (typeof prev === 'function') {
+          prev(event);
+        }
+        sendWhenOpen();
+      };
+    }
   }
 
   componentDidMount() {
@@ -300,7 +331,15 @@ class Game extends Component {
     this.setState({
       'sender': sender
     });
-    window.cards.playCard = (c) => { };
+    if (window.cards) {
+      window.cards.playCard = this.playCard.bind(this);
+    }
+  }
+
+  componentWillUnmount() {
+    if (this.pingTimer) {
+      clearInterval(this.pingTimer);
+    }
   }
 
   render() {
