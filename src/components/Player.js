@@ -15,7 +15,7 @@ export default class Players extends Component {
         };
         let playerCls = 'Player';
         if (this.props.userPlayerN % 2 !== this.props.playerN % 2
-            && this.props.turn == this.props.userPlayerN) {
+            && this.props.turn === this.props.userPlayerN) {
             playerCls = playerCls + ' OtherTeamPlayer';
         }
         return <div

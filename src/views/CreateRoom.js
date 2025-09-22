@@ -3,10 +3,6 @@ import React, { Component } from 'react';
 import './CreateRoom.css';
 
 class CreateRoom extends Component {
-    constructor(props) {
-        super(props);
-    }
-
     handleJoin(event) {
         event.preventDefault();
         window.location = '/game/' + this.roomCode.value + '?' +
@@ -77,9 +73,9 @@ class CreateRoom extends Component {
                     </div>
                 </div>
                 <div className='Footer'>
-                    Bring your own chat //{' '}
+                    Bring your own chat {'//'}{' '}
                     <a href="https://github.com/neelsomani/literature-server">GitHub Repo</a>
-                    {' '}// MIT License
+                    {' '}{'// MIT License'}
                 </div>
             </div>
         );
